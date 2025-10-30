@@ -1,67 +1,98 @@
-# 🧮 Math Window Cards Generator
+# Math Window Cards Generator
 
-A printable, customizable worksheet generator designed to help Grade 3–6 students practice core math operations like addition, subtraction, multiplication, and division — especially useful in classrooms with limited access to devices.
+A web-based worksheet generator for elementary math practice (addition, subtraction, multiplication, division). Designed for teachers who need printable worksheets and students who want online practice.
 
-> Originally created for San Vicente Elementary School (QC, PH) teachers and learners.
-
----
-
-## ✨ Features
-
-- 📄 **Printer-friendly A4 layout**  
-  Compact card grid fits up to **10×10 problems per page** with answer toggle.
-
-- 🔄 **Dynamic operator support**  
-  Choose from **Addition, Subtraction, Multiplication, or Division**.
-
-- 🧠 **Math difficulty constraints**  
-  - ✅ Avoid **carrying** in addition
-  - ✅ Avoid **borrowing** in subtraction  
-  *(Only active when relevant to selected operation)*
-
-- 🧩 **Flexible grid layout**  
-  Customize **rows × columns**, digit range (1–6), and font size (8pt+).
-
-- 👁️ **Toggle answers**  
-  Show/hide correct answers in-place — ideal for printing a worksheet + answer key combo.
-
-- 💾 **Local storage support**  
-  Automatically remembers your last-used settings.
+**Live Demo:** [alfieprojectsdev.github.io/windowcards](https://alfieprojectsdev.github.io/windowcards/)
 
 ---
 
-## 💡 Planned Improvements
+## What It Does
 
-- Smarter operand generation (e.g., avoid trivial division like `55 ÷ 55`)
-- Operator-aware answer coloring (already partially styled in CSS)
-- Alternate layout mode: one-page problems + one-page answer key
-
----
-
-## 🖨️ Printing Tips
-
-- Use **A4 paper**, portrait mode  
-- Click **"Toggle Answers"** to hide answers before printing
-- Click again to reveal answers and reprint an overlay answer sheet
+- Generates customizable math problem grids (up to 10×10 per page)
+- Supports four operations: `+  −  ×  ÷`
+- Optional constraints: avoid carrying (addition) or borrowing (subtraction)
+- **Interactive practice mode** — students can type answers online with instant feedback
+- Print-friendly A4 layout with answer key toggle
+- Remembers your last-used settings
 
 ---
 
-## 👨‍🏫 Acknowledgements
+## Quick Start
 
-Huge thanks to the teachers and students of **San Vicente Elementary School** for testing and providing feedback.
+### For Worksheets (Print)
+1. Open the app in your browser
+2. Choose operation, grid size, and digit count
+3. Click **Generate** to create problems
+4. Click **Toggle Answers** to hide solutions
+5. Click **Print** for worksheets
 
-Inspired in part by discussions in ["Why People Hate Math" by *Answer in Progress*](https://www.youtube.com/watch?v=xvOkXXprG2g).
+**Printing Tips:**
+- Use A4 paper, portrait orientation
+- Hide answers before printing the worksheet
+- Show answers and reprint for the answer key
+
+### For Practice (Online)
+1. Generate problems (or use existing worksheet)
+2. Click **Practice Mode**
+3. Type answers in the input boxes
+4. Answers turn **green** (correct) or **red** (incorrect) as you type
+5. Click **Exit Practice Mode** to return to worksheet view
 
 ---
 
-## 📁 Project Files
+## Current Limitations
 
-- `index.html` – Main app UI
-- `styles.css` – Print-optimized, responsive layout
-- `script.js` – Grid generator, settings, and constraints logic
+- Division problems sometimes generate trivial cases (e.g., `55 ÷ 55`)
+- Answer key prints on the same page as problems (no separate sheet option)
+- No progress tracking yet (number of problems solved, accuracy %)
 
 ---
 
-## ✅ Live Demo
+## Technical Details
 
-[Available now](https://apelicano.github.io/windowcards/) via GitHub Pages...
+**Files:**
+- `index.html` — UI controls and grid container
+- `styles.css` — Responsive layout + print styles
+- `script.js` — Problem generation, constraints, localStorage
+
+**Key Features:**
+- Uses `localStorage` to save preferences
+- Dynamic title updates (e.g., "4-Digit Addition Window Cards")
+- Font size and grid layout adjust for screen and print
+- Constraint validation with visual warnings (⚠ marker)
+- Practice mode preserves problems when toggling between modes
+
+---
+
+## Roadmap
+
+**Next (v4.1):**
+- [ ] Custom constraint rules (teacher-defined patterns via dropdown UI)
+- [ ] Smarter division problem generation
+- [ ] Separate answer key page option
+
+**Future:**
+- [ ] Mobile-optimized touch input
+- [ ] Progress tracking (problems solved, accuracy, time)
+- [ ] Shareable preset links for teachers
+- [ ] Score summary at end of practice session
+
+---
+
+## Development Context
+
+Built for **San Vicente Elementary School (Quezon City, Philippines)** to support classrooms with limited device access. Teachers requested a tool that works equally well on paper and screen.
+
+Inspired by discussions in ["Why People Hate Math"](https://www.youtube.com/watch?v=xvOkXXprG2g) by *Answer in Progress*.
+
+---
+
+## Contributing
+
+This is a learning project built while studying freeCodeCamp's [Certified Full Stack Developer Curriculum](https://www.freecodecamp.org/learn/full-stack-developer/). Feedback and suggestions welcome via GitHub Issues.
+
+---
+
+## License
+
+MIT

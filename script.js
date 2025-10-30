@@ -1,3 +1,5 @@
+let practiceMode = false;
+let currentProblems = []; // Add to store problems
 // Format a number with comma separators (e.g., 12345 → "12,345")
 function formatNumber(num) {
   return num.toLocaleString();
@@ -121,6 +123,62 @@ function updateVisibility() {
   }
 }
 
+// Re-render existing problems without generating new ones
+function renderProblems() {
+  const numRows = parseInt(document.getElementById('numRows').value);
+  const numCols = parseInt(document.getElementById('numCols').value);
+  const numDigits = parseInt(document.getElementById('numDigits').value);
+  const fontSize = parseInt(document.getElementById('fontSize').value);
+  const operator = document.getElementById('operator').value;
+  const container = document.getElementById('cardContainer');
+  const opInfo = OPERATOR_MAP[operator];
+
+  // Same layout calculations as generate()
+  const usableWidthPx = 756;
+  const estimatedCardWidthPx = Math.floor(usableWidthPx / numCols);
+  const chPerCard = Math.floor(estimatedCardWidthPx / 8);
+  let cardPadding = '0.25rem';
+  if (fontSize <= 8) cardPadding = '0.05rem';
+  else if (fontSize <= 10) cardPadding = '0.2rem';
+
+  document.documentElement.style.setProperty('--card-font-size', `${fontSize}pt`);
+  document.documentElement.style.setProperty('--card-width', `${chPerCard}ch`);
+  document.documentElement.style.setProperty('--card-padding', cardPadding);
+  document.documentElement.style.setProperty('--card-cols', numCols);
+
+  container.innerHTML = '';
+
+  // Render stored problems
+  currentProblems.forEach(({ num1, num2, result, obeyedConstraint }) => {
+    const num1Str = formatNumber(num1);
+    const num2Str = formatNumber(num2);
+    const resultStr = formatNumber(result);
+    const maxLength = Math.max(num1Str.length, num2Str.length);
+    const equalsLine = '='.repeat(maxLength + 2);
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    if (practiceMode) {
+      card.innerHTML = `
+${num1Str.padStart(maxLength + 2)}
+${opInfo.symbol}${num2Str.padStart(maxLength + 1)}
+ ${equalsLine}
+<input type="text" class="answer-input" data-answer="${result}" placeholder="?" />
+${obeyedConstraint === false ? '<div class="note">⚠</div>' : ''}`;
+    } else {
+      card.innerHTML = `
+${num1Str.padStart(maxLength + 2)}
+${opInfo.symbol}${num2Str.padStart(maxLength + 1)}
+ ${equalsLine}
+<div class="answer">${resultStr}</div>
+${obeyedConstraint === false ? '<div class="note">⚠</div>' : ''}`;
+    }
+
+    container.appendChild(card);
+  });
+}
+
 // Generate and render the window card grid
 function generate() {
   const numRows = parseInt(document.getElementById('numRows').value);
@@ -154,9 +212,14 @@ function generate() {
   container.innerHTML = '';
 
   // Generate each math card
+  // NEW CODE: Save problems when generating
+  currentProblems = []; // Clear previous problems
   for (let i = 0; i < totalProblems; i++) {
     const [num1, num2, obeyedConstraint] = getRandomOperands(numDigits, operator);
     const result = opInfo.op(num1, num2);
+
+    // Store this problem
+    currentProblems.push({ num1, num2, result, obeyedConstraint });
 
     const num1Str = formatNumber(num1);
     const num2Str = formatNumber(num2);
@@ -167,15 +230,56 @@ function generate() {
     const card = document.createElement('div');
     card.className = 'card';
 
-    card.innerHTML = `
-${num1Str.padStart(maxLength + 2)}
-${opInfo.symbol}${num2Str.padStart(maxLength + 1)}
- ${equalsLine}
-<div class="answer">${resultStr}</div>
-${obeyedConstraint === false ? '<div class="note">⚠</div>' : ''}`;
+    // adds practice mode support
+    if (practiceMode) {
+      // Practice mode: show input field instead of answer
+      card.innerHTML = `
+    ${num1Str.padStart(maxLength + 2)}
+    ${opInfo.symbol}${num2Str.padStart(maxLength + 1)}
+    ${equalsLine}
+    <input type="text" class="answer-input" data-answer="${result}" placeholder="?" />
+    ${obeyedConstraint === false ? '<div class="note">⚠</div>' : ''}`;
+    } else {
+      // Worksheet mode: show hidden answer (original behavior)
+      card.innerHTML = `
+    ${num1Str.padStart(maxLength + 2)}
+    ${opInfo.symbol}${num2Str.padStart(maxLength + 1)}
+    ${equalsLine}
+    <div class="answer">${resultStr}</div>
+    ${obeyedConstraint === false ? '<div class="note">⚠</div>' : ''}`;
+    }
 
     container.appendChild(card);
   }
+ // After creating all cards, render them
+ renderProblems();
+}
+
+// Check student answers in practice mode
+document.getElementById('cardContainer').addEventListener('input', (e) => {
+  if (!e.target.classList.contains('answer-input')) return;
+  
+  const userAnswer = parseInt(e.target.value.replace(/,/g, ''));
+  const correctAnswer = parseInt(e.target.dataset.answer);
+  
+  // Remove previous feedback classes
+  e.target.classList.remove('correct', 'incorrect');
+  
+  if (!e.target.value) return; // Don't show feedback if empty
+  
+  if (userAnswer === correctAnswer) {
+    e.target.classList.add('correct');
+  } else {
+    e.target.classList.add('incorrect');
+  }
+});
+
+// Toggle between worksheet mode and practice mode
+function togglePracticeMode() {
+  practiceMode = !practiceMode;
+  const button = document.querySelector('button[onclick="togglePracticeMode()"]');
+  button.textContent = practiceMode ? 'Exit Practice Mode' : 'Practice Mode';
+  renderProblems(); // Use renderProblems() instead of generate()
 }
 
 // Toggle answer visibility for all cards (used for printing or worksheet mode)
