@@ -18,42 +18,58 @@ A web-based worksheet generator for elementary math practice (addition, subtract
 ---
 
 ## Quick Start
-
+ 
 ### For Worksheets (Print)
-1. Open the app in your browser
+1. Open the app in your browser (Live Demo)
 2. Choose operation, grid size, and digit count
 3. Click **Generate** to create problems
 4. Click **Toggle Answers** to hide solutions
 5. Click **Print** for worksheets
-
+ 
 **Printing Tips:**
 - Use A4 paper, portrait orientation
 - Hide answers before printing the worksheet
 - Show answers and reprint for the answer key
-
+ 
 ### For Practice (Online)
 1. Generate problems (or use existing worksheet)
 2. Click **Practice Mode**
 3. Type answers in the input boxes
 4. Answers turn **green** (correct) or **red** (incorrect) as you type
 5. Click **Exit Practice Mode** to return to worksheet view
-
+ 
+### Running Locally
+Since the project uses ES Modules, you must serve it via a local web server (opening `index.html` directly will not work).
+ 
+```bash
+npx serve .
+# or
+python3 -m http.server
+```
+ 
 ---
-
+ 
 ## Current Limitations
-
+ 
 - Division problems sometimes generate trivial cases (e.g., `55 ÷ 55`)
 - Answer key prints on the same page as problems (no separate sheet option)
 - No progress tracking yet (number of problems solved, accuracy %)
-
+ 
 ---
-
+ 
 ## Technical Details
-
+ 
+**Architecture:**
+- Modular MVC structure (ES Modules)
+- **Model**: `src/model/` (Logic & Data)
+- **View**: `src/view/` (Grid Rendering)
+- **Service**: `src/services/` (Persistence)
+- **Controller**: `src/main.js` (Orchestration)
+ 
 **Files:**
-- `index.html` — UI controls and grid container
+- `index.html` — Entry point
 - `styles.css` — Responsive layout + print styles
-- `script.js` — Problem generation, constraints, localStorage
+- `src/` - Application source code
 
 **Key Features:**
 - Uses `localStorage` to save preferences

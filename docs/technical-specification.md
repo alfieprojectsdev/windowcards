@@ -5,13 +5,20 @@
 The **Math Window Cards Generator** is a client-side web application designed to generate printable arithmetic worksheets and precise practice drills. It emphasizes high-fidelity print layouts (A4) and offers an interactive "Practice Mode" for students.
 
 ## 2. System Architecture
-
-The application checks the "Vanilla Stack" architecture (see `ADR-001`). It follows a monolithic client-side pattern where state and logic are tightly coupled with the DOM.
-
-### 2.1 File Structure
--   `index.html`: Entry point. Contains the Control Panel (Inputs/Buttons) and the Output Grid (`#cardContainer`).
--   `styles.css`: Handles all visual presentation, including complex Print logic using `@media print` and CSS Variables for dynamic resizing.
--   `script.js`: Contains all application logic, event handlers, and generation algorithms.
+ 
+ The application uses a **Modular MVC** architecture based on ES Modules (see `ADR-001` for the "No Build Tools" decision).
+ 
+ ### 2.1 File Structure
+ -   `index.html`: Entry point. Imports `src/main.js` as a module.
+ -   `styles.css`: Handles all visual presentation.
+ -   `src/model/`:
+     -   `Generator.js`: Pure functions for math generation and constraint checking.
+     -   `State.js`: Runtime state management (settings, current problems).
+ -   `src/view/`:
+     -   `GridRenderer.js`: Logic for DOM updates and CSS variable manipulation.
+ -   `src/services/`:
+     -   `Storage.js`: LocalStorage abstraction.
+ -   `src/main.js`: Controller that orchestrates initialization and events.
 
 ## 3. Data Structures & State Management
 
