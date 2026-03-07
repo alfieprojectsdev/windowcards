@@ -25,6 +25,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - Refactored `src/model/Generator.js` to utilize the new abstract syntax tree rules mapping instead of procedural logic.
+- Optimized the pseudo-random generation loop by factoring in division and subtraction clamping bounds prior to executing the AST condition testing.
+
+### Fixed
+- Re-seeded Division operands to securely exclude zeros and prevent infinite remainders loops.
+- Re-ordered Subtraction random bounds to correctly force Operand A as maximum natively, eliminating 50% candidate waste.
+- Added firm upper limit bounds on max-attempts loops with manual visual `alert()` triggers instead of silent hanging.
 
 ---
 
