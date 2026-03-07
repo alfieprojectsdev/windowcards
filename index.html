@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Math Window Cards</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
   <div class="print-header">
     <div>Name: ______________________________</div>
@@ -58,6 +60,21 @@
       </label>
     </div>
 
+    <!-- Rule Builder Custom Constraints -->
+    <div class="control-row" style="margin-top: 0.5rem; width: 100%;">
+      <div class="rule-builder-container"
+        style="background: #f5f5f5; padding: 1rem; border-radius: 4px; border: 1px solid #ddd; width: 100%;">
+        <h4 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 0.95rem; color: #444;">Custom Constraints</h4>
+
+        <div id="rule-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+        </div>
+
+        <button id="btn-add-rule"
+          style="margin-top: 0.75rem; background: #e0e0e0; border: 1px solid #ccc; font-size: 0.85rem; padding: 0.25rem 0.5rem;">+
+          Add Rule</button>
+      </div>
+    </div>
+
     <!-- Row 2: Buttons -->
     <div class="control-row">
       <button onclick="generate()">Generate</button>
@@ -68,13 +85,44 @@
     </div>
   </div>
 
-  <p class="print-note">Tip: Click "Toggle Answers" to hide answers before printing. Generate again to get a new set.</p>
+  <p class="print-note">Tip: Click "Toggle Answers" to hide answers before printing. Generate again to get a new set.
+  </p>
 
   <div class="cards" id="cardContainer"></div>
 
   <script type="module" src="./src/main.js"></script>
-  
+
+  <!-- Rule Builder Template -->
+  <template id="rule-row-template">
+    <div class="rule-row"
+      style="display: flex; gap: 0.5rem; align-items: center; background: white; padding: 0.5rem; border-radius: 4px; border: 1px solid #ddd;">
+      <select class="rule-field" style="padding: 0.25rem;">
+        <option value="a">Operand A</option>
+        <option value="b">Operand B</option>
+        <option value="result">Result</option>
+      </select>
+
+      <select class="rule-operator" style="padding: 0.25rem;">
+        <option value="EQUALS">Equals (=)</option>
+        <option value="NOT_EQUALS">Not Equals (≠)</option>
+        <option value="GREATER_THAN">Greater Than (&gt;)</option>
+        <option value="LESS_THAN">Less Than (&lt;)</option>
+      </select>
+
+      <select class="rule-value-type" style="padding: 0.25rem;">
+        <option value="literal">Number</option>
+        <option value="reference">Field</option>
+      </select>
+
+      <input type="text" class="rule-value" placeholder="e.g., 5 or 'b'" style="padding: 0.25rem; width: 6rem;">
+
+      <button class="btn-remove-rule"
+        style="color: #d32f2f; background: none; border: none; cursor: pointer; font-weight: bold; padding: 0.25rem 0.5rem; margin-left: auto;">✕</button>
+    </div>
+  </template>
+
   <!-- Add GoatCounter tracking -->
   <script data-goatcounter="https://ithinkandicode.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
+
 </html>

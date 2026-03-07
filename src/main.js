@@ -3,6 +3,9 @@ import { State } from './model/State.js';
 import { Storage } from './services/Storage.js';
 import { GridRenderer } from './view/GridRenderer.js';
 import { Analytics } from './analytics.js';
+import { RuleBuilder } from './view/RuleBuilder.js';
+
+const builder = new RuleBuilder('rule-list', 'rule-row-template', 'btn-add-rule');
 
 const Main = {
     init() {
@@ -32,33 +35,6 @@ const Main = {
             // Add Change Listeners to update State and re-generate/render
             el.addEventListener('change', (e) => this.handleInputChange(id, e.target));
         });
-
-        // 2. Attach Button Listeners
-        // We can't use onclick=generate() in HTML anymore because scope is module-level (private).
-        // so we need to attach listeners here.
-        // However, existing buttons have onclick attributes. We should ideally remove them in HTML
-        // and attach IDs.
-        // For now, let's attach to the buttons by their text content or position or just override window.generate
-        // To be clean, we'll attach to window for backward compat with HTML onclicks OR select them.
-        // The plan said "Attach event listeners".
-        // Let's rely on selecting buttons. The HTML buttons call global functions.
-        // We will Expose functions to window for compatibility with existing HTML onclick attributes,
-        // OR we will update HTML to remove onclick handlers and add IDs. 
-        // The plan said "Update index.html". I will likely update index.html to remove onclicks and use IDs.
-        // But to be safe and robust, I'll attach handlers to buttons with specific text or add data-attributes.
-
-        // Actually, looking at index.html, buttons invoke: generate(), toggleAnswers(), togglePracticeMode(), window.print()
-        // I should expose these to window to minimize HTML changes if I want, or better, 
-        // select them. But they don't have IDs.
-        // I will use querySelector based on their onclick attribute to find them and addEventListener,
-        // then remove the onclick attribute. 
-        // Or simpler: Just assign window.generate = ... 
-
-        // Let's go with the cleaner module approach: assign to window for now to match the existing button calls,
-        // but the plan implies a cleaner MVC. 
-        // I'll stick to binding to window for the "migration" step to be least disruptive to HTML structure unless I edit HTML heavily.
-        // Wait, I am editing index.html anyway to switch to module. 
-        // So I will expose `window.generate`, `window.toggleAnswers`, `window.togglePracticeMode`.
 
         window.generate = () => this.generate();
         window.toggleAnswers = () => this.toggleAnswers();
@@ -130,6 +106,14 @@ const Main = {
         const { numRows, numCols, numDigits, operator } = State.settings;
         const totalProblems = numRows * numCols;
 
+        // Capture Custom Rules from the RuleBuilder UI
+        const customAST = builder.generateAST();
+        if (customAST) {
+            State.settings.customRules = customAST;
+        } else {
+            delete State.settings.customRules;
+        }
+
         try {
             State.currentProblems = generateProblemSet(totalProblems, State.settings);
 
@@ -139,8 +123,7 @@ const Main = {
             this.render();
         } catch (error) {
             console.error(error);
-            alert("Constraints are too strict. Could not generate enough valid problems. Try changing the settings or using larger numbers.");
-            // Optionally, we could clear the grid, but leaving it as-is is safer.
+            alert("Constraints are too strict. Could not generate enough valid problems. Try changing the settings, softening constraints, or using larger numbers.");
         }
     },
 

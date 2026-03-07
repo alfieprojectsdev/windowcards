@@ -14,7 +14,7 @@ function generateNumber(digits) {
 }
 
 export function buildASTFromSettings(settings) {
-    const { operator, avoidCarrying, avoidBorrowing } = settings;
+    const { operator, avoidCarrying, avoidBorrowing, customRules } = settings;
     let rules = [];
 
     // Base rules for all problems
@@ -31,6 +31,10 @@ export function buildASTFromSettings(settings) {
         rules.push({ type: "NO_REMAINDER" });
         rules.push({ type: "GREATER_THAN", field: "b", value: 1 });
         rules.push({ type: "NOT_EQUALS", field: "a", fieldRef: "b" });
+    }
+
+    if (customRules) {
+        rules.push(customRules);
     }
 
     if (rules.length === 0) return null;
