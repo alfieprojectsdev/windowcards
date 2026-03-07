@@ -130,12 +130,18 @@ const Main = {
         const { numRows, numCols, numDigits, operator } = State.settings;
         const totalProblems = numRows * numCols;
 
-        State.currentProblems = generateProblemSet(totalProblems, State.settings);
+        try {
+            State.currentProblems = generateProblemSet(totalProblems, State.settings);
 
-        // Analytics Tracking
-        Analytics.trackEvent('worksheet-generated', `Generated ${totalProblems} ${operator} problems (${numDigits} digits)`);
+            // Analytics Tracking
+            Analytics.trackEvent('worksheet-generated', `Generated ${totalProblems} ${operator} problems (${numDigits} digits)`);
 
-        this.render();
+            this.render();
+        } catch (error) {
+            console.error(error);
+            alert("Constraints are too strict. Could not generate enough valid problems. Try changing the settings or using larger numbers.");
+            // Optionally, we could clear the grid, but leaving it as-is is safer.
+        }
     },
 
     render() {

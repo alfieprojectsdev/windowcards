@@ -56,8 +56,28 @@ export function generateValidProblem(digits, activeRulesAST, operator) {
     const opInfo = OPERATOR_MAP[operator];
 
     do {
-        const a = generateNumber(digits);
-        const b = generateNumber(digits);
+        let a = generateNumber(digits);
+        let b = generateNumber(digits);
+
+        if (operator === '-') {
+            // Fix Subtraction Negatives Trap
+            const tempA = Math.max(a, b);
+            const tempB = Math.min(a, b);
+            a = tempA;
+            b = tempB;
+        } else if (operator === '÷') {
+            // Fix Division Probability Trap and Divide by Zero Trap
+            // Re-generate `b` to strictly avoid `0`
+            while (b === 0) b = generateNumber(digits);
+
+            // Generate a valid `result` within reasonable bounds to build `a` backwards
+            const maxResultDigits = digits; // Keep quotient within max digits
+            let result = generateNumber(maxResultDigits);
+            while (result === 0) result = generateNumber(maxResultDigits);
+
+            // Construct `a` backwards so it's guaranteed to divide cleanly by `b` without remainder
+            a = result * b;
+        }
 
         candidateContext = {
             a, b,
@@ -71,9 +91,8 @@ export function generateValidProblem(digits, activeRulesAST, operator) {
 
         attempts++;
         if (attempts > MAX_ATTEMPTS) {
-            console.error(`Constraints are too strict; cannot generate valid problem after ${MAX_ATTEMPTS} attempts. rules:`, activeRulesAST);
-            // Fallback: return any generated operands rather than breaking the UI, just not guaranteed to match rules
-            break;
+            // Throws error to be caught by UI instead of silently looping or returning invalid problem
+            throw new Error(`Constraints are too strict; cannot generate valid problem after ${MAX_ATTEMPTS} attempts.`);
         }
 
     } while (!isValid);
