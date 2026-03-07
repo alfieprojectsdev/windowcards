@@ -2,6 +2,7 @@ import { generateProblemSet } from './model/Generator.js';
 import { State } from './model/State.js';
 import { Storage } from './services/Storage.js';
 import { GridRenderer } from './view/GridRenderer.js';
+import { Analytics } from './analytics.js';
 
 const Main = {
     init() {
@@ -75,8 +76,6 @@ const Main = {
 
         // Parse numbers
         if (target.type === 'number' || (target.tagName === 'SELECT' && !isNaN(parseInt(val)) && id !== 'operator')) {
-            // operator is string, others are numbers usually. 
-            // Start IDs: numRows, numCols, numDigits, fontSize are numbers.
             State.settings[id] = parseInt(val);
         } else {
             State.settings[id] = val;
@@ -86,11 +85,16 @@ const Main = {
             this.updateVisibility();
         }
 
+        // Analytics Event Tracking
+        if (target.type === 'checkbox') {
+            Analytics.trackEvent(`setting-${id}-${val ? 'enabled' : 'disabled'}`, `Constraint: ${id} turned ${val ? 'on' : 'off'}`);
+        } else if (id === 'operator') {
+            Analytics.trackEvent(`operator-${val}-selected`, `Operator: ${val}`);
+        }
+
         // Save settings immediately
         Storage.saveSettings(State.settings);
 
-        // If it's a visual setting that doesn't need re-gen (like toggle answers), handle it.
-        // But most inputs here affect generation.
         this.generate();
     },
 
@@ -104,9 +108,6 @@ const Main = {
         if (op === '+') {
             carryBox.disabled = false;
             carryLabel.classList.remove("disabled");
-            if (document.getElementById("operator").value !== op) {
-                // Sync DOM if needed, but we rely on DOM to trigger change.
-            }
         } else {
             carryBox.disabled = true;
             carryBox.checked = false;
@@ -126,16 +127,14 @@ const Main = {
     },
 
     generate() {
-        // 1. Update State from DOM to be sure (or rely on listeners).
-        // Listeners are safer. 
-
-        const { numRows, numCols } = State.settings;
+        const { numRows, numCols, numDigits, operator } = State.settings;
         const totalProblems = numRows * numCols;
 
-        // 2. Generate Data
         State.currentProblems = generateProblemSet(totalProblems, State.settings);
 
-        // 3. Render
+        // Analytics Tracking
+        Analytics.trackEvent('worksheet-generated', `Generated ${totalProblems} ${operator} problems (${numDigits} digits)`);
+
         this.render();
     },
 

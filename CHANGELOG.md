@@ -10,11 +10,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Planned
 - Interactive practice mode (students answer online with instant feedback)
-- Custom constraint rules (teacher-defined "trivial problem" patterns via dropdown UI)
-- Smarter division problem generation (avoid more trivial cases)
 - Separate answer key page option
 - Mobile-optimized touch input
 - Progress tracking (problems solved, accuracy %)
+
+---
+
+## [4.1.0] - 2026-03-07
+
+### Added
+- **AST Rules Engine**: Decoupled validation logic from generation logic via a JSON-based rule engine.
+- Math constraints are now dynamically evaluated based on UI properties.
+- **Teacher Guide**: Added `docs/teacher-guide.md` covering the new constraints system.
+
+### Changed
+- Refactored `src/model/Generator.js` to utilize the new abstract syntax tree rules mapping instead of procedural logic.
 
 ---
 
