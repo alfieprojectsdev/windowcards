@@ -23,9 +23,9 @@
       <label>
         Grid: Rows × Columns
         <div style="display: flex; gap: 0.5rem;">
-          <input type="number" id="numRows" value="10" min="1" max="100" style="width: 5rem;" />
+          <input type="number" id="numRows" value="10" min="1" max="20" style="width: 5rem;" />
           ×
-          <input type="number" id="numCols" value="10" min="1" max="100" style="width: 5rem;" />
+          <input type="number" id="numCols" value="10" min="1" max="20" style="width: 5rem;" />
         </div>
       </label>
 
@@ -85,8 +85,8 @@
     </div>
   </div>
 
-  <p class="print-note">Tip: Click "Toggle Answers" to hide answers before printing. Generate again to get a new set.
-  </p>
+  <p class="print-note">Tip: Answers start hidden, so Print gives a blank worksheet. Click "Toggle Answers" and print
+    again for the answer key.</p>
 
   <div class="cards" id="cardContainer"></div>
 
@@ -96,27 +96,33 @@
   <template id="rule-row-template">
     <div class="rule-row"
       style="display: flex; gap: 0.5rem; align-items: center; background: white; padding: 0.5rem; border-radius: 4px; border: 1px solid #ddd;">
-      <select class="rule-field" style="padding: 0.25rem;">
+      <select class="rule-field" aria-label="Field" style="padding: 0.25rem;">
         <option value="a">Operand A</option>
         <option value="b">Operand B</option>
         <option value="result">Result</option>
       </select>
 
-      <select class="rule-operator" style="padding: 0.25rem;">
+      <select class="rule-operator" aria-label="Comparison" style="padding: 0.25rem;">
         <option value="EQUALS">Equals (=)</option>
         <option value="NOT_EQUALS">Not Equals (≠)</option>
         <option value="GREATER_THAN">Greater Than (&gt;)</option>
         <option value="LESS_THAN">Less Than (&lt;)</option>
       </select>
 
-      <select class="rule-value-type" style="padding: 0.25rem;">
+      <select class="rule-value-type" aria-label="Compare with" style="padding: 0.25rem;">
         <option value="literal">Number</option>
         <option value="reference">Field</option>
       </select>
 
-      <input type="text" class="rule-value" placeholder="e.g., 5 or 'b'" style="padding: 0.25rem; width: 6rem;">
+      <input type="number" class="rule-value" aria-label="Number" placeholder="e.g. 50" style="padding: 0.25rem; width: 6rem;">
 
-      <button class="btn-remove-rule"
+      <select class="rule-value-field" aria-label="Field to compare with" style="padding: 0.25rem;" hidden>
+        <option value="a">Operand A</option>
+        <option value="b" selected>Operand B</option>
+        <option value="result">Result</option>
+      </select>
+
+      <button class="btn-remove-rule" aria-label="Remove rule"
         style="color: #d32f2f; background: none; border: none; cursor: pointer; font-weight: bold; padding: 0.25rem 0.5rem; margin-left: auto;">✕</button>
     </div>
   </template>

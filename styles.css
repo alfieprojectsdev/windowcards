@@ -55,8 +55,11 @@ button {
 
 .cards {
   display: grid;
+  /* Same font size as the cards, so the ch in --card-width is measured in the card font */
+  font-size: var(--card-font-size);
   grid-template-columns: repeat(var(--card-cols), var(--card-width));
   gap: 0.25rem;
+  overflow-x: auto; /* wide grids scroll inside the box instead of widening the page */
 }
 
 .card {
@@ -80,15 +83,6 @@ button {
 .card.show-answer .answer {
   visibility: visible;
   background: #dff0d8; /* Light green answer highlight */
-}
-
-/* Optional visual note (e.g., for violated constraints) */
-.card .note {
-  position: absolute;
-  top: 0.1em;
-  left: 0.2em;
-  font-size: 0.9em;
-  color: #c00;
 }
 
 /* Optional operator-based coloring (add/remove class in JS if needed) */
@@ -120,6 +114,8 @@ button {
 
 /* Practice mode input styling */
 .answer-input {
+  display: block;
+  box-sizing: border-box;
   width: 100%;
   text-align: right;
   font-size: inherit;
@@ -163,6 +159,7 @@ button {
 
   .cards {
     gap: 0;
+    overflow: visible;
   }
 
   .print-header {

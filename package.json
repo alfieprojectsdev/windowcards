@@ -1,0 +1,9 @@
+{
+  "name": "windowcards",
+  "private": true,
+  "type": "module",
+  "description": "No dependencies and no build step (see ADR 0001). This file only tells Node that src/ uses ES modules so the tests can import it.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

@@ -8,11 +8,43 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **Custom Constraints panel** (`da3c86e`): teachers add rows such as "Result less than 100" or "Operand A greater than Operand B". Rules are saved in `localStorage` and the grid regenerates when a rule changes.
+- Unit tests in `tests/`, run with `npm test` (Node's built-in runner, no dependencies).
+- `LICENSE` file (MIT, as the README already stated).
+
+### Changed
+- An N-digit division problem now has an N-digit dividend and a divisor of at most ceil(N/2) digits. Before, a 4-digit division sheet produced 8-digit dividends such as `53,645,568 ÷ 9,111`.
+- Grid rows and columns are limited to 1–20 (was 1–100).
+- The "Field" option in a custom rule is now a dropdown of Operand A / Operand B / Result instead of a text box.
+- Card width is computed from the longest number on the sheet instead of from the column count.
+- ADR 0002 moved from the repo root to `docs/architecture/decisions/`; ADRs 0002 and 0003 marked Accepted.
+
+### Fixed
+- Custom rules on **Result** always compared against `null`, so "Result < 10" let everything through and "Result > 10" always failed.
+- Typing 0 in Digits with Division froze the tab.
+- Clearing a number box saved `NaN` to `localStorage` and left the page blank, even after a reload. All settings are now clamped to their limits and invalid values reset to the default.
+- Cards clipped digits at larger font sizes because the column width was measured in the page font, not the card font.
+- Every card started with an empty line.
+- The screen tip and README said to toggle answers off before printing, but answers start hidden.
+
+### Removed
+- The ⚠ "constraint violated" marker. Every problem passes all rules before it's shown, so the marker could never appear.
+- `notes.md` (early requirements notes, now covered by this changelog) and `docs/WEB_CLAUDE_INSTRUCTIONS.md` (an agent handoff note describing features this app doesn't have).
+
 ### Planned
-- Interactive practice mode (students answer online with instant feedback)
 - Separate answer key page option
 - Mobile-optimized touch input
 - Progress tracking (problems solved, accuracy %)
+
+---
+
+## Unversioned changes between 3.0.0 and 4.1.0
+
+These shipped without a changelog entry:
+- Interactive practice mode: students type answers and see green/red feedback (`0b3955c`, 2025-10-30)
+- GoatCounter pageview analytics (`fddae07`, 2025-10-30)
+- Refactor from a single `script.js` into ES modules under `src/` (`6d9866b`, 2026-02-01)
 
 ---
 

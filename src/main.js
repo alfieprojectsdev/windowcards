@@ -1,23 +1,21 @@
 import { generateProblemSet } from './model/Generator.js';
-import { State } from './model/State.js';
+import { State, normalizeSettings } from './model/State.js';
 import { Storage } from './services/Storage.js';
 import { GridRenderer } from './view/GridRenderer.js';
 import { Analytics } from './analytics.js';
 import { RuleBuilder } from './view/RuleBuilder.js';
 
-const builder = new RuleBuilder('rule-list', 'rule-row-template', 'btn-add-rule');
-
 const Main = {
     init() {
+        this.builder = new RuleBuilder('rule-list', 'rule-row-template', 'btn-add-rule', () => this.handleRulesChange());
+        this.builder.setRows(Storage.loadRules());
         this.loadSettings();
         this.initUI();
         this.generate(); // Initial generation on load
     },
 
     loadSettings() {
-        const saved = Storage.loadSettings();
-        // Merge saved settings into State
-        Object.assign(State.settings, saved);
+        State.settings = Storage.loadSettings();
     },
 
     initUI() {
@@ -48,14 +46,12 @@ const Main = {
     },
 
     handleInputChange(id, target) {
-        const val = target.type === 'checkbox' ? target.checked : target.value;
+        const raw = target.type === 'checkbox' ? target.checked : target.value;
 
-        // Parse numbers
-        if (target.type === 'number' || (target.tagName === 'SELECT' && !isNaN(parseInt(val)) && id !== 'operator')) {
-            State.settings[id] = parseInt(val);
-        } else {
-            State.settings[id] = val;
-        }
+        // Parse and clamp, then show the value actually used (e.g. an emptied box goes back to the default)
+        State.settings = normalizeSettings({ ...State.settings, [id]: raw });
+        const val = State.settings[id];
+        if (target.type !== 'checkbox') target.value = val;
 
         if (id === 'operator') {
             this.updateVisibility();
@@ -71,6 +67,11 @@ const Main = {
         // Save settings immediately
         Storage.saveSettings(State.settings);
 
+        this.generate();
+    },
+
+    handleRulesChange() {
+        Storage.saveRules(this.builder.readRows());
         this.generate();
     },
 
@@ -107,7 +108,7 @@ const Main = {
         const totalProblems = numRows * numCols;
 
         // Capture Custom Rules from the RuleBuilder UI
-        const customAST = builder.generateAST();
+        const customAST = this.builder.generateAST();
         if (customAST) {
             State.settings.customRules = customAST;
         } else {
@@ -116,6 +117,9 @@ const Main = {
 
         try {
             State.currentProblems = generateProblemSet(totalProblems, State.settings);
+            // Rendering uses the settings these problems were made with, so a failed
+            // generation later can't pair old problems with a new operator or title
+            State.currentSettings = { ...State.settings };
 
             // Analytics Tracking
             Analytics.trackEvent('worksheet-generated', `Generated ${totalProblems} ${operator} problems (${numDigits} digits)`);
@@ -129,9 +133,11 @@ const Main = {
 
     render() {
         const container = document.getElementById('cardContainer');
-        GridRenderer.updateCSSVariables(State.settings);
-        GridRenderer.updateTitle(State.settings);
-        GridRenderer.renderGrid(State.currentProblems, container, State.practiceMode);
+        const settings = State.currentSettings;
+        if (!settings) return; // nothing generated yet
+        GridRenderer.updateCSSVariables(settings, State.currentProblems);
+        GridRenderer.updateTitle(settings);
+        GridRenderer.renderGrid(State.currentProblems, container, State.practiceMode, settings.operator);
     },
 
     toggleAnswers() {

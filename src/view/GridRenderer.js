@@ -5,19 +5,43 @@ export const GridRenderer = {
         return num.toLocaleString();
     },
 
-    updateCSSVariables(settings) {
-        const { numCols, fontSize } = settings;
-        // Layout tuning
-        const usableWidthPx = 756;
-        const estimatedCardWidthPx = Math.floor(usableWidthPx / numCols);
-        const chPerCard = Math.floor(estimatedCardWidthPx / 8);
+    /** The three text lines of a card (operands and rule line), without the answer. */
+    cardText({ num1, num2 }, symbol) {
+        const num1Str = this.formatNumber(num1);
+        const num2Str = this.formatNumber(num2);
+        const maxLength = Math.max(num1Str.length, num2Str.length);
+        return [
+            num1Str.padStart(maxLength + 2),
+            `${symbol}${num2Str.padStart(maxLength + 1)}`,
+            ` ${'='.repeat(maxLength + 2)}`
+        ].join('\n');
+    },
+
+    /**
+     * Column width in `ch` that fits the longest line of any card, plus 1ch for padding.
+     * `ch` is the width of "0" in the card font; commas and spaces are narrower, so this never clips.
+     */
+    cardWidthCh(problems, symbol) {
+        let widest = 0;
+        problems.forEach(problem => {
+            const lines = this.cardText(problem, symbol).split('\n');
+            lines.push(this.formatNumber(problem.result));
+            lines.forEach(line => { widest = Math.max(widest, line.length); });
+        });
+        return widest + 1;
+    },
+
+    updateCSSVariables(settings, problems) {
+        const { numCols, fontSize, operator } = settings;
 
         let cardPadding = '0.25rem';
         if (fontSize <= 8) cardPadding = '0.05rem';
         else if (fontSize <= 10) cardPadding = '0.2rem';
 
+        const widthCh = this.cardWidthCh(problems, OPERATOR_MAP[operator].symbol);
+
         document.documentElement.style.setProperty('--card-font-size', `${fontSize}pt`);
-        document.documentElement.style.setProperty('--card-width', `${chPerCard}ch`);
+        document.documentElement.style.setProperty('--card-width', `${widthCh}ch`);
         document.documentElement.style.setProperty('--card-padding', cardPadding);
         document.documentElement.style.setProperty('--card-cols', numCols);
     },
@@ -33,58 +57,28 @@ export const GridRenderer = {
         document.querySelectorAll('.card').forEach(card => card.classList.toggle('show-answer'));
     },
 
-    renderGrid(problems, container, isPracticeMode) {
+    renderGrid(problems, container, isPracticeMode, operator) {
         container.innerHTML = '';
+        const { symbol } = OPERATOR_MAP[operator];
 
-        problems.forEach(({ num1, num2, result, obeyedConstraint }) => {
-            // Find operator symbol based on logic (reverse lookup or passed in props if needed)
-            // For now, we need to know the operator used. 
-            // Ideally, the problem object should carry the operator symbol or we pass it.
-            // To keep it simple, we'll re-derive or pass it. 
-            // Let's pass the operator in the problem or assume standard +,-,*,/ 
-            // Actually, problems don't store operator. 
-            // We can infer it or we can change Generator to include it.
-            // But better: we'll pass the OPERATOR from State.settings in 'main.js' or look it up.
-            // Wait, 'currentProblems' in script.js didn't store operator.
-            // It used the global 'operator' value. 
-            // We should probably pass 'operator' to renderGrid or rely on the fact that 
-            // all problems in the set use the same operator.
-
-            // Let's look up the operator from the DOM or passing it is cleaner.
-            // We will assume the caller passes the 'operator' needed for display in 'settings' or similar.
-            // But verify: renderGrid(problems, container, isPracticeMode) signature in specs.
-            // We'll update the signature to accept 'operatorSymbol' or similar.
-
-            // FIX: We need the operator symbol.
-            // Let's get it from the inputs since we are in the View and connected to state.
-            const operatorVal = document.getElementById('operator').value;
-            const opInfo = OPERATOR_MAP[operatorVal];
-
-            const num1Str = this.formatNumber(num1);
-            const num2Str = this.formatNumber(num2);
-            const resultStr = this.formatNumber(result);
-            const maxLength = Math.max(num1Str.length, num2Str.length);
-            const equalsLine = '='.repeat(maxLength + 2);
-
+        problems.forEach(problem => {
             const card = document.createElement('div');
             card.className = 'card';
 
+            let answer;
             if (isPracticeMode) {
-                card.innerHTML = `
-${num1Str.padStart(maxLength + 2)}
-${opInfo.symbol}${num2Str.padStart(maxLength + 1)}
- ${equalsLine}
-<input type="text" class="answer-input" data-answer="${result}" placeholder="?" />
-${obeyedConstraint === false ? '<div class="note">⚠</div>' : ''}`;
+                answer = document.createElement('input');
+                answer.type = 'text';
+                answer.className = 'answer-input';
+                answer.dataset.answer = problem.result;
+                answer.placeholder = '?';
             } else {
-                card.innerHTML = `
-${num1Str.padStart(maxLength + 2)}
-${opInfo.symbol}${num2Str.padStart(maxLength + 1)}
- ${equalsLine}
-<div class="answer">${resultStr}</div>
-${obeyedConstraint === false ? '<div class="note">⚠</div>' : ''}`;
+                answer = document.createElement('div');
+                answer.className = 'answer';
+                answer.textContent = this.formatNumber(problem.result);
             }
 
+            card.append(this.cardText(problem, symbol), answer);
             container.appendChild(card);
         });
     }
