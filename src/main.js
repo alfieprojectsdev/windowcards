@@ -117,6 +117,9 @@ const Main = {
 
         try {
             State.currentProblems = generateProblemSet(totalProblems, State.settings);
+            // Rendering uses the settings these problems were made with, so a failed
+            // generation later can't pair old problems with a new operator or title
+            State.currentSettings = { ...State.settings };
 
             // Analytics Tracking
             Analytics.trackEvent('worksheet-generated', `Generated ${totalProblems} ${operator} problems (${numDigits} digits)`);
@@ -130,9 +133,11 @@ const Main = {
 
     render() {
         const container = document.getElementById('cardContainer');
-        GridRenderer.updateCSSVariables(State.settings, State.currentProblems);
-        GridRenderer.updateTitle(State.settings);
-        GridRenderer.renderGrid(State.currentProblems, container, State.practiceMode, State.settings.operator);
+        const settings = State.currentSettings;
+        if (!settings) return; // nothing generated yet
+        GridRenderer.updateCSSVariables(settings, State.currentProblems);
+        GridRenderer.updateTitle(settings);
+        GridRenderer.renderGrid(State.currentProblems, container, State.practiceMode, settings.operator);
     },
 
     toggleAnswers() {

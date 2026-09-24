@@ -39,6 +39,7 @@ export function normalizeSettings(input = {}) {
 
 export const State = {
     currentProblems: [],
+    currentSettings: null, // settings that produced currentProblems
     practiceMode: false,
     settings: { ...DEFAULT_SETTINGS }
 };

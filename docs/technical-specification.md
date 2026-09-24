@@ -35,6 +35,7 @@ The application uses a **Modular MVC** architecture based on ES Modules with no 
     ```javascript
     { num1: number, num2: number, result: number }
     ```
+-   `currentSettings`: A copy of the settings that produced `currentProblems`. Rendering uses this, so if a later generation fails, the old problems keep their own operator and title.
 
 Every settings change goes through `normalizeSettings()`, which parses strings, clamps numbers to `LIMITS` and replaces anything unparseable with the default:
 
