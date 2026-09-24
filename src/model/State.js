@@ -7,16 +7,24 @@ export const DEFAULT_SETTINGS = {
     fontSize: 10,
     operator: '+',
     avoidCarrying: false,
-    avoidBorrowing: false
+    avoidBorrowing: false,
+    includeKey: true
 };
 
 // [min, max] for each numeric setting. Must match the min/max attributes in index.html.
+// 10 × 10 is the most that fits on one A4 page.
 export const LIMITS = {
-    numRows: [1, 20],
-    numCols: [1, 20],
+    numRows: [1, 10],
+    numCols: [1, 10],
     numDigits: [1, 6],
     fontSize: [8, 36]
 };
+
+function parseBoolean(value, fallback) {
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    return fallback;
+}
 
 /**
  * Returns a complete, valid settings object. Numeric values are parsed and clamped to LIMITS;
@@ -31,8 +39,9 @@ export function normalizeSettings(input = {}) {
     }
 
     if (OPERATORS.includes(input.operator)) settings.operator = input.operator;
-    settings.avoidCarrying = input.avoidCarrying === true || input.avoidCarrying === 'true';
-    settings.avoidBorrowing = input.avoidBorrowing === true || input.avoidBorrowing === 'true';
+    settings.avoidCarrying = parseBoolean(input.avoidCarrying, false);
+    settings.avoidBorrowing = parseBoolean(input.avoidBorrowing, false);
+    settings.includeKey = parseBoolean(input.includeKey, DEFAULT_SETTINGS.includeKey);
 
     return settings;
 }
@@ -40,6 +49,7 @@ export function normalizeSettings(input = {}) {
 export const State = {
     currentProblems: [],
     currentSettings: null, // settings that produced currentProblems
-    practiceMode: false,
+    generationFailed: false, // the latest settings couldn't produce a full set
+    previewMode: 'worksheet', // 'worksheet' | 'key'
     settings: { ...DEFAULT_SETTINGS }
 };

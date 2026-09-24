@@ -1,85 +1,66 @@
 import { OPERATOR_MAP } from '../model/Generator.js';
+import { formatNumber } from '../model/Layout.js';
+
+const PHONE_PREVIEW_COUNT = 12; // must match the nth-child rule in styles.css
+
+export function sheetTitle({ numDigits, operator }) {
+    return `${numDigits}-Digit ${OPERATOR_MAP[operator].title} Window Cards`;
+}
+
+/** Inner HTML for one grid cell. The worksheet leaves the answer row empty but keeps its height. */
+export function cellHTML(problem, n, symbol, withAnswer) {
+    return `<span class="cell-n">${n}</span>`
+        + '<div class="wc">'
+        + `<span></span><span>${formatNumber(problem.num1)}</span>`
+        + `<span class="wc-op">${symbol}</span><span>${formatNumber(problem.num2)}</span>`
+        + '<span class="wc-rule"></span>'
+        + `<span class="wc-answer">${withAnswer ? formatNumber(problem.result) : ''}</span>`
+        + '</div>';
+}
+
+function fillGrid(grid, problems, symbol, withAnswer) {
+    grid.innerHTML = problems.map((problem, i) =>
+        `<div class="cell">${cellHTML(problem, i + 1, symbol, withAnswer)}</div>`).join('');
+}
 
 export const GridRenderer = {
-    formatNumber(num) {
-        return num.toLocaleString();
-    },
-
-    /** The three text lines of a card (operands and rule line), without the answer. */
-    cardText({ num1, num2 }, symbol) {
-        const num1Str = this.formatNumber(num1);
-        const num2Str = this.formatNumber(num2);
-        const maxLength = Math.max(num1Str.length, num2Str.length);
-        return [
-            num1Str.padStart(maxLength + 2),
-            `${symbol}${num2Str.padStart(maxLength + 1)}`,
-            ` ${'='.repeat(maxLength + 2)}`
-        ].join('\n');
-    },
-
     /**
-     * Column width in `ch` that fits the longest line of any card, plus 1ch for padding.
-     * `ch` is the width of "0" in the card font; commas and spaces are narrower, so this never clips.
+     * Draws both A4 pages (worksheet and answer key) and the preview toolbar text.
+     * @param {Object} settings  settings the problems were made with, plus the current fontSize/includeKey
+     * @param {'worksheet'|'key'} previewMode which page shows on screen; print uses includeKey
      */
-    cardWidthCh(problems, symbol) {
-        let widest = 0;
-        problems.forEach(problem => {
-            const lines = this.cardText(problem, symbol).split('\n');
-            lines.push(this.formatNumber(problem.result));
-            lines.forEach(line => { widest = Math.max(widest, line.length); });
-        });
-        return widest + 1;
-    },
-
-    updateCSSVariables(settings, problems) {
-        const { numCols, fontSize, operator } = settings;
-
-        let cardPadding = '0.25rem';
-        if (fontSize <= 8) cardPadding = '0.05rem';
-        else if (fontSize <= 10) cardPadding = '0.2rem';
-
-        const widthCh = this.cardWidthCh(problems, OPERATOR_MAP[operator].symbol);
-
-        document.documentElement.style.setProperty('--card-font-size', `${fontSize}pt`);
-        document.documentElement.style.setProperty('--card-width', `${widthCh}ch`);
-        document.documentElement.style.setProperty('--card-padding', cardPadding);
-        document.documentElement.style.setProperty('--card-cols', numCols);
-    },
-
-    updateTitle(settings) {
-        const { numDigits, operator } = settings;
-        const title = document.getElementById("mainTitle");
-        const opLabel = OPERATOR_MAP[operator]?.title || 'Math';
-        title.textContent = `${numDigits}-Digit ${opLabel} Window Cards`;
-    },
-
-    toggleAnswers() {
-        document.querySelectorAll('.card').forEach(card => card.classList.toggle('show-answer'));
-    },
-
-    renderGrid(problems, container, isPracticeMode, operator) {
-        container.innerHTML = '';
+    render(problems, settings, previewMode) {
+        const { numRows, numCols, fontSize, operator, includeKey } = settings;
         const { symbol } = OPERATOR_MAP[operator];
+        const title = sheetTitle(settings);
+        const total = problems.length;
 
-        problems.forEach(problem => {
-            const card = document.createElement('div');
-            card.className = 'card';
+        const root = document.documentElement.style;
+        root.setProperty('--rows', numRows);
+        root.setProperty('--cols', numCols);
+        root.setProperty('--wc-card-size', `${fontSize}pt`);
 
-            let answer;
-            if (isPracticeMode) {
-                answer = document.createElement('input');
-                answer.type = 'text';
-                answer.className = 'answer-input';
-                answer.dataset.answer = problem.result;
-                answer.placeholder = '?';
-            } else {
-                answer = document.createElement('div');
-                answer.className = 'answer';
-                answer.textContent = this.formatNumber(problem.result);
-            }
+        document.title = title;
+        document.getElementById('mainTitle').textContent = title;
+        document.getElementById('keyTitle').textContent = `Answer key — ${title}`;
+        document.getElementById('keyKind').textContent = includeKey ? 'Answer key · Page 2' : 'Answer key';
+        document.querySelectorAll('.sheet-total').forEach(el => { el.textContent = total; });
 
-            card.append(this.cardText(problem, symbol), answer);
-            container.appendChild(card);
-        });
+        fillGrid(document.getElementById('cardContainer'), problems, symbol, false);
+        fillGrid(document.getElementById('cardContainerKey'), problems, symbol, true);
+
+        document.getElementById('sheet-worksheet').classList.toggle('is-shown', previewMode !== 'key');
+        document.getElementById('sheet-key').classList.toggle('is-shown', previewMode === 'key');
+        document.body.classList.toggle('print-key', includeKey);
+
+        document.querySelectorAll('.preview-title').forEach(el => { el.textContent = title; });
+        document.getElementById('previewMeta').textContent =
+            `${numRows} × ${numCols} · ${total} problems · ${fontSize} pt · A4 portrait`;
+        document.getElementById('previewMore').textContent = total > PHONE_PREVIEW_COUNT
+            ? `Showing ${PHONE_PREVIEW_COUNT} of ${total}. The full sheet prints on one A4 page.`
+            : 'The full sheet prints on one A4 page.';
+
+        const printLabel = includeKey ? 'Print 2 pages' : 'Print 1 page';
+        document.querySelectorAll('.print-label').forEach(el => { el.textContent = printLabel; });
     }
 };

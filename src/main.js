@@ -1,179 +1,222 @@
-import { generateProblemSet } from './model/Generator.js';
+import { generateProblemSet, answerRange, OPERATOR_MAP } from './model/Generator.js';
 import { State, normalizeSettings } from './model/State.js';
+import { fitCheck, formatNumber } from './model/Layout.js';
 import { Storage } from './services/Storage.js';
 import { GridRenderer } from './view/GridRenderer.js';
-import { Analytics } from './analytics.js';
 import { RuleBuilder } from './view/RuleBuilder.js';
+import { PracticeView } from './view/PracticeView.js';
+import { Analytics } from './analytics.js';
+
+const PRACTICE_COUNT = 20;
+
+// Changing one of these needs a new set of problems; anything else only redraws
+const REGENERATE_ON = ['operator', 'numDigits', 'numRows', 'numCols', 'avoidCarrying', 'avoidBorrowing'];
+
+const OPERATION_NOTES = {
+    '×': 'Multiplication has no extra options. Use a custom rule to limit how big answers get.',
+    '÷': 'Division always divides evenly, never divides by 0 or 1, and never divides a number by itself.'
+};
+
+const $ = id => document.getElementById(id);
 
 const Main = {
     init() {
-        this.builder = new RuleBuilder('rule-list', 'rule-row-template', 'btn-add-rule', () => this.handleRulesChange());
-        this.builder.setRows(Storage.loadRules());
-        this.loadSettings();
-        this.initUI();
-        this.generate(); // Initial generation on load
-    },
+        this.form = $('settings');
+        this.rules = new RuleBuilder({
+            list: $('rule-list'),
+            template: $('rule-row-template'),
+            addButton: $('btn-add-rule'),
+            empty: $('rules-empty'),
+            intro: $('rules-intro'),
+            error: $('rule-error'),
+            errorText: $('rule-error-text'),
+            removeLastButton: $('btn-remove-last-rule')
+        }, () => this.handleRulesChange());
+        this.rules.setRows(Storage.loadRules());
 
-    loadSettings() {
-        State.settings = Storage.loadSettings();
-    },
-
-    initUI() {
-        // 1. Populate inputs from State.settings
-        const ids = ["numRows", "numCols", "numDigits", "fontSize", "operator", "avoidCarrying", "avoidBorrowing"];
-        ids.forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            if (typeof State.settings[id] === 'boolean') {
-                el.checked = State.settings[id];
-            } else {
-                el.value = State.settings[id];
-            }
-
-            // Add Change Listeners to update State and re-generate/render
-            el.addEventListener('change', (e) => this.handleInputChange(id, e.target));
+        this.practice = new PracticeView(() => {
+            this.newSet();
+            this.startPractice(true);
         });
 
-        window.generate = () => this.generate();
-        window.toggleAnswers = () => this.toggleAnswers();
-        window.togglePracticeMode = () => this.togglePracticeMode();
-
-        // Also need to handle operator visibility logic
-        this.updateVisibility();
-
-        // Practice mode input checking delegation
-        document.getElementById('cardContainer').addEventListener('input', (e) => this.checkAnswer(e));
+        State.settings = Storage.loadSettings();
+        this.syncForm();
+        this.bindEvents();
+        this.generate();
+        this.route();
     },
 
-    handleInputChange(id, target) {
-        const raw = target.type === 'checkbox' ? target.checked : target.value;
+    bindEvents() {
+        this.form.addEventListener('submit', (e) => e.preventDefault());
 
-        // Parse and clamp, then show the value actually used (e.g. an emptied box goes back to the default)
-        State.settings = normalizeSettings({ ...State.settings, [id]: raw });
-        const val = State.settings[id];
-        if (target.type !== 'checkbox') target.value = val;
+        // Rule rows live inside the form but report through RuleBuilder's onChange
+        this.form.addEventListener('change', (e) => {
+            if (!e.target.closest('#rule-list')) this.handleSettingsChange(e.target);
+        });
 
-        if (id === 'operator') {
-            this.updateVisibility();
-        }
+        // − / + stepper buttons
+        this.form.addEventListener('click', (e) => {
+            const button = e.target.closest('[data-step]');
+            if (!button) return;
+            const input = $(button.getAttribute('aria-controls'));
+            input.value = Number(input.value) + Number(button.dataset.step);
+            this.handleSettingsChange(input);
+        });
 
-        // Analytics Event Tracking
+        document.querySelectorAll('input[name="previewMode"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                State.previewMode = radio.value;
+                this.render();
+            });
+        });
+
+        document.querySelectorAll('.js-new-set').forEach(button => button.addEventListener('click', () => this.newSet()));
+        document.querySelectorAll('.js-print').forEach(button => button.addEventListener('click', () => window.print()));
+
+        window.addEventListener('hashchange', () => this.route());
+    },
+
+    /** Writes State.settings into the form, including values that were clamped. */
+    syncForm() {
+        const s = State.settings;
+        const f = this.form.elements;
+        f.operator.value = s.operator;
+        f.numDigits.value = String(s.numDigits);
+        f.numRows.value = s.numRows;
+        f.numCols.value = s.numCols;
+        f.fontSize.value = s.fontSize;
+        f.avoidCarrying.checked = s.avoidCarrying;
+        f.avoidBorrowing.checked = s.avoidBorrowing;
+        f.includeKey.checked = s.includeKey;
+    },
+
+    readForm() {
+        const f = this.form.elements;
+        return {
+            operator: f.operator.value,
+            numDigits: f.numDigits.value,
+            numRows: f.numRows.value,
+            numCols: f.numCols.value,
+            fontSize: f.fontSize.value,
+            avoidCarrying: f.avoidCarrying.checked,
+            avoidBorrowing: f.avoidBorrowing.checked,
+            includeKey: f.includeKey.checked
+        };
+    },
+
+    handleSettingsChange(target) {
+        const before = State.settings;
+        const settings = normalizeSettings(this.readForm());
+        // Carry/borrow options only exist for + and −
+        if (settings.operator !== '+') settings.avoidCarrying = false;
+        if (settings.operator !== '-') settings.avoidBorrowing = false;
+        State.settings = settings;
+        this.syncForm();
+        Storage.saveSettings(settings);
+
         if (target.type === 'checkbox') {
-            Analytics.trackEvent(`setting-${id}-${val ? 'enabled' : 'disabled'}`, `Constraint: ${id} turned ${val ? 'on' : 'off'}`);
-        } else if (id === 'operator') {
-            Analytics.trackEvent(`operator-${val}-selected`, `Operator: ${val}`);
+            const on = settings[target.id];
+            Analytics.trackEvent(`setting-${target.id}-${on ? 'enabled' : 'disabled'}`, `Constraint: ${target.id} turned ${on ? 'on' : 'off'}`);
+        } else if (target.name === 'operator') {
+            Analytics.trackEvent(`operator-${settings.operator}-selected`, `Operator: ${settings.operator}`);
         }
 
-        // Save settings immediately
-        Storage.saveSettings(State.settings);
-
-        this.generate();
+        if (REGENERATE_ON.some(key => before[key] !== settings[key])) this.generate();
+        else this.render();
     },
 
     handleRulesChange() {
-        Storage.saveRules(this.builder.readRows());
+        Storage.saveRules(this.rules.readRows());
         this.generate();
     },
 
-    updateVisibility() {
-        const op = State.settings.operator;
-        const carryBox = document.getElementById("avoidCarrying");
-        const borrowBox = document.getElementById("avoidBorrowing");
-        const carryLabel = document.getElementById("carryLabel");
-        const borrowLabel = document.getElementById("borrowLabel");
-
-        if (op === '+') {
-            carryBox.disabled = false;
-            carryLabel.classList.remove("disabled");
-        } else {
-            carryBox.disabled = true;
-            carryBox.checked = false;
-            carryLabel.classList.add("disabled");
-            State.settings.avoidCarrying = false;
-        }
-
-        if (op === '-') {
-            borrowBox.disabled = false;
-            borrowLabel.classList.remove("disabled");
-        } else {
-            borrowBox.disabled = true;
-            borrowBox.checked = false;
-            borrowLabel.classList.add("disabled");
-            State.settings.avoidBorrowing = false;
-        }
+    newSet() {
+        const { numRows, numCols, numDigits, operator } = State.settings;
+        Analytics.trackEvent('worksheet-generated', `Generated ${numRows * numCols} ${operator} problems (${numDigits} digits)`);
+        this.generate();
     },
 
+    /** Makes a new set of problems. If the rules can't be met, keeps the last set that worked. */
     generate() {
-        const { numRows, numCols, numDigits, operator } = State.settings;
-        const totalProblems = numRows * numCols;
-
-        // Capture Custom Rules from the RuleBuilder UI
-        const customAST = this.builder.generateAST();
-        if (customAST) {
-            State.settings.customRules = customAST;
-        } else {
-            delete State.settings.customRules;
-        }
+        const { numRows, numCols } = State.settings;
+        const settings = { ...State.settings, customRules: this.rules.generateAST() };
 
         try {
-            State.currentProblems = generateProblemSet(totalProblems, State.settings);
+            State.currentProblems = generateProblemSet(numRows * numCols, settings);
             // Rendering uses the settings these problems were made with, so a failed
             // generation later can't pair old problems with a new operator or title
             State.currentSettings = { ...State.settings };
-
-            // Analytics Tracking
-            Analytics.trackEvent('worksheet-generated', `Generated ${totalProblems} ${operator} problems (${numDigits} digits)`);
-
-            this.render();
+            State.generationFailed = false;
         } catch (error) {
             console.error(error);
-            alert("Constraints are too strict. Could not generate enough valid problems. Try changing the settings, softening constraints, or using larger numbers.");
-        }
-    },
-
-    render() {
-        const container = document.getElementById('cardContainer');
-        const settings = State.currentSettings;
-        if (!settings) return; // nothing generated yet
-        GridRenderer.updateCSSVariables(settings, State.currentProblems);
-        GridRenderer.updateTitle(settings);
-        GridRenderer.renderGrid(State.currentProblems, container, State.practiceMode, settings.operator);
-    },
-
-    toggleAnswers() {
-        GridRenderer.toggleAnswers();
-    },
-
-    togglePracticeMode() {
-        State.practiceMode = !State.practiceMode;
-        // Update button text
-        // We need to find the button. It had onclick="togglePracticeMode()"
-        const btn = document.querySelector('button[onclick="togglePracticeMode()"]');
-        if (btn) {
-            btn.textContent = State.practiceMode ? 'Exit Practice Mode' : 'Practice Mode';
+            State.generationFailed = true;
         }
         this.render();
     },
 
-    checkAnswer(e) {
-        if (!e.target.classList.contains('answer-input')) return;
+    render() {
+        const settings = State.settings;
+        const failed = State.generationFailed;
 
-        const userAnswer = parseInt(e.target.value.replace(/,/g, ''));
-        const correctAnswer = parseInt(e.target.dataset.answer);
-
-        e.target.classList.remove('correct', 'incorrect');
-
-        if (!e.target.value) return;
-
-        if (userAnswer === correctAnswer) {
-            e.target.classList.add('correct');
-        } else {
-            e.target.classList.add('incorrect');
+        let errorMessage = '';
+        if (failed) {
+            const [low, high] = answerRange(settings.numDigits, settings.operator);
+            const name = OPERATOR_MAP[settings.operator].title.toLowerCase();
+            errorMessage = `With ${settings.numDigits}-digit ${name}, answers run from about ${formatNumber(low)} to ${formatNumber(high)}. `
+                + 'Change a number in a rule, remove a rule, or choose different digits.';
         }
+        this.rules.setError(errorMessage);
+        $('staleNotice').hidden = !failed;
+        $('preview').classList.toggle('is-stale', failed);
+
+        $('carryLabel').hidden = settings.operator !== '+';
+        $('borrowLabel').hidden = settings.operator !== '-';
+        $('opNote').hidden = !OPERATION_NOTES[settings.operator];
+        $('opNote').textContent = OPERATION_NOTES[settings.operator] ?? '';
+        $('maxNum').textContent = formatNumber(10 ** settings.numDigits - 1);
+        $('totalProblems').textContent = settings.numRows * settings.numCols;
+
+        const fit = fitCheck(settings);
+        $('fitWarn').hidden = fit.fits;
+        $('fitText').textContent = fit.message;
+
+        if (!State.currentSettings) return; // nothing has generated yet
+        // Problems keep the operator, digits and grid they were made with; size and key follow the form
+        const shown = { ...State.currentSettings, fontSize: settings.fontSize, includeKey: settings.includeKey };
+        GridRenderer.render(State.currentProblems, shown, State.previewMode);
+    },
+
+    route() {
+        const practice = location.hash === '#practice';
+        $('builder').hidden = practice;
+        $('practice').hidden = !practice;
+        document.querySelectorAll('.nav-link').forEach(link => {
+            if (link.dataset.view === (practice ? 'practice' : 'worksheet')) link.setAttribute('aria-current', 'page');
+            else link.removeAttribute('aria-current');
+        });
+
+        if (practice) this.startPractice(false);
+        else this.practice.stop();
+        window.scrollTo(0, 0);
+    },
+
+    /** Practice uses the first 20 problems of the worksheet. Restarts only when the worksheet changed, unless forced. */
+    startPractice(force) {
+        if (!State.currentSettings) {
+            location.hash = '#worksheet';
+            return;
+        }
+        if (!force && this.practiceSource === State.currentProblems) {
+            this.practice.resume();
+            return;
+        }
+        this.practiceSource = State.currentProblems;
+        const problems = State.currentProblems.slice(0, PRACTICE_COUNT).map((problem, i) => ({ ...problem, n: i + 1 }));
+        this.practice.start(problems, State.currentSettings);
+        Analytics.trackEvent('practice-started', `Practice: ${problems.length} problems`);
     }
 };
 
-// Initialize
 window.addEventListener('DOMContentLoaded', () => {
     Main.init();
 });

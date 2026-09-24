@@ -5,127 +5,331 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Math Window Cards</title>
+  <link rel="preload" href="fonts/archivo-latin-var.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
-  <div class="print-header">
-    <div>Name: ______________________________</div>
-    <div>Grade: ______________________________</div>
-    <div>Date: _______________</div>
+  <nav class="wc-nav no-print" aria-label="Main">
+    <a class="wc-brand" href="#worksheet">
+      <span class="brand-mark" aria-hidden="true"><span></span></span>
+      <span><span class="wide-only-inline">Math </span>Window Cards</span>
+    </a>
+    <a href="#worksheet" class="nav-link wide-only" data-view="worksheet">Make a worksheet</a>
+    <a href="#practice" class="nav-link" data-view="practice">Practice</a>
+  </nav>
+
+  <!-- ============ Teacher builder ============ -->
+  <div class="wc-builder" id="builder">
+    <form class="settings" id="settings" aria-label="Worksheet settings" novalidate>
+      <h1 class="builder-title">Make a worksheet</h1>
+      <p class="builder-lede">
+        <span class="desktop-only">Changes update the page preview right away.</span>
+        <span class="phone-only">Set it up, check the preview, then print.</span>
+      </p>
+
+      <div class="wc-group">
+        <fieldset>
+          <legend><span class="wc-step">01</span><span>Operation</span></legend>
+          <div id="operator" class="wc-choices wc-choices-op" style="--n: 4">
+            <label class="wc-choice"><input type="radio" name="operator" value="+"><span class="sym" aria-hidden="true">+</span><span>Add</span></label>
+            <label class="wc-choice"><input type="radio" name="operator" value="-"><span class="sym" aria-hidden="true">−</span><span>Subtract</span></label>
+            <label class="wc-choice"><input type="radio" name="operator" value="×"><span class="sym" aria-hidden="true">×</span><span>Multiply</span></label>
+            <label class="wc-choice"><input type="radio" name="operator" value="÷"><span class="sym" aria-hidden="true">÷</span><span>Divide</span></label>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="wc-group">
+        <fieldset>
+          <legend><span class="wc-step">02</span><span>Digits per number</span></legend>
+          <div id="numDigits" class="wc-choices wc-choices-digits" style="--n: 6">
+            <label class="wc-choice"><input type="radio" name="numDigits" value="1">1</label>
+            <label class="wc-choice"><input type="radio" name="numDigits" value="2">2</label>
+            <label class="wc-choice"><input type="radio" name="numDigits" value="3">3</label>
+            <label class="wc-choice"><input type="radio" name="numDigits" value="4">4</label>
+            <label class="wc-choice"><input type="radio" name="numDigits" value="5">5</label>
+            <label class="wc-choice"><input type="radio" name="numDigits" value="6">6</label>
+          </div>
+          <p class="wc-help">Largest number: <strong class="wc-strong-num" id="maxNum">9,999</strong></p>
+          <label class="wc-check" id="carryLabel">
+            <input type="checkbox" id="avoidCarrying" name="avoidCarrying">
+            <span><strong>No carrying</strong><small>Every column adds up to 9 or less, like 1,234 + 5,321.</small></span>
+          </label>
+          <label class="wc-check" id="borrowLabel" hidden>
+            <input type="checkbox" id="avoidBorrowing" name="avoidBorrowing">
+            <span><strong>No borrowing</strong><small>Every top digit is at least the digit below it, like 8,765 − 4,321.</small></span>
+          </label>
+          <p class="wc-help" id="opNote" hidden></p>
+        </fieldset>
+      </div>
+
+      <div class="wc-group">
+        <fieldset>
+          <legend><span class="wc-step">03</span><span>Grid size</span></legend>
+          <div class="grid-size">
+            <div class="field">
+              <label for="numRows">Rows</label>
+              <div class="wc-stepper">
+                <button type="button" data-step="-1" aria-controls="numRows" aria-label="Fewer rows">−</button>
+                <input type="number" id="numRows" name="numRows" min="1" max="10" inputmode="numeric">
+                <button type="button" data-step="1" aria-controls="numRows" aria-label="More rows">+</button>
+              </div>
+            </div>
+            <span class="times" aria-hidden="true">×</span>
+            <div class="field">
+              <label for="numCols">Columns</label>
+              <div class="wc-stepper">
+                <button type="button" data-step="-1" aria-controls="numCols" aria-label="Fewer columns">−</button>
+                <input type="number" id="numCols" name="numCols" min="1" max="10" inputmode="numeric">
+                <button type="button" data-step="1" aria-controls="numCols" aria-label="More columns">+</button>
+              </div>
+            </div>
+          </div>
+          <p class="wc-help"><strong class="wc-strong-num"><span id="totalProblems">100</span> problems</strong> · up to 10 × 10 on one A4 page</p>
+        </fieldset>
+      </div>
+
+      <div class="wc-group">
+        <fieldset>
+          <legend><span class="wc-step">04</span><span>Printing</span></legend>
+          <div class="field">
+            <label for="fontSize">Number size</label>
+            <div class="stepper-row">
+              <div class="wc-stepper">
+                <button type="button" data-step="-1" aria-controls="fontSize" aria-label="Smaller numbers">−</button>
+                <input type="number" id="fontSize" name="fontSize" min="8" max="36" inputmode="numeric" aria-describedby="fontHint">
+                <button type="button" data-step="1" aria-controls="fontSize" aria-label="Larger numbers">+</button>
+              </div>
+              <span>pt</span>
+            </div>
+          </div>
+          <p class="wc-help" id="fontHint">8–10 pt fits a full 10 × 10 grid.</p>
+          <p class="wc-warn" id="fitWarn" role="status" hidden>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            <span id="fitText"></span>
+          </p>
+          <label class="wc-check wc-check-plain">
+            <input type="checkbox" id="includeKey" name="includeKey">
+            <span>Print the answer key as page 2</span>
+          </label>
+        </fieldset>
+      </div>
+
+      <div class="wc-group">
+        <fieldset>
+          <legend><span class="wc-step">05</span><span>Custom rules</span><span class="legend-note">Optional</span></legend>
+          <div class="rules">
+            <div class="wc-empty" id="rules-empty">
+              <p class="wc-empty-title">No custom rules yet</p>
+              <p>Rules narrow which problems appear. For example: <strong>Answer is less than 100</strong>, or <strong>First number is greater than second number</strong>.</p>
+            </div>
+            <p class="rules-intro" id="rules-intro" hidden>Only include problems where…</p>
+            <ol id="rule-list" aria-label="Custom rules"></ol>
+            <div id="rule-error" role="alert" hidden>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <div>
+                <p class="title">Too strict — no problems fit these rules</p>
+                <p id="rule-error-text"></p>
+                <button type="button" class="btn btn-secondary" id="btn-remove-last-rule">Remove last rule</button>
+              </div>
+            </div>
+            <div>
+              <button type="button" class="btn btn-secondary" id="btn-add-rule">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                Add rule
+              </button>
+            </div>
+          </div>
+        </fieldset>
+      </div>
+    </form>
+
+    <main class="wc-preview" id="preview" aria-label="Preview">
+      <div class="wc-toolbar no-print">
+        <div class="toolbar-heading">
+          <h2><span class="phone-only">Preview</span><span class="desktop-only preview-title"></span></h2>
+          <p class="desktop-only toolbar-meta" id="previewMeta"></p>
+        </div>
+        <div class="toolbar-actions">
+          <div class="wc-seg" role="radiogroup" aria-label="Preview">
+            <label><input type="radio" name="previewMode" value="worksheet" checked>Worksheet</label>
+            <label><input type="radio" name="previewMode" value="key">Answer key</label>
+          </div>
+          <button type="button" id="btn-new-set" class="btn btn-secondary desktop-only js-new-set">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-7.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/></svg>
+            New set
+          </button>
+          <button type="button" id="btn-print" class="btn btn-primary btn-print desktop-only js-print">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+            <span class="print-label">Print 2 pages</span>
+          </button>
+        </div>
+      </div>
+
+      <p class="phone-only preview-phone-title preview-title no-print"></p>
+
+      <p class="stale-notice no-print" id="staleNotice" hidden>Showing the last set that worked. Fix the rule marked in <strong>05 Custom rules</strong> to update the page.</p>
+
+      <div class="sheets">
+        <article class="sheet is-shown" id="sheet-worksheet" data-kind="worksheet">
+          <div class="sheet-head">
+            <div><span>Name</span><span class="blank"></span></div>
+            <div><span>Grade &amp; Section</span><span class="blank"></span></div>
+            <div><span>Date</span><span class="blank"></span></div>
+            <div><span>Score</span><span class="blank"></span><span class="sheet-score">/ <span class="sheet-total">100</span></span></div>
+          </div>
+          <div class="sheet-title">
+            <h1 id="mainTitle">Math Window Cards</h1>
+            <span class="sheet-kind">Worksheet · Page 1</span>
+          </div>
+          <div class="sheet-grid" id="cardContainer"></div>
+        </article>
+
+        <article class="sheet" id="sheet-key" data-kind="key">
+          <div class="sheet-head">
+            <div><span>Name</span><span class="blank"></span></div>
+            <div><span>Grade &amp; Section</span><span class="blank"></span></div>
+            <div><span>Date</span><span class="blank"></span></div>
+            <div><span>Score</span><span class="blank"></span><span class="sheet-score">/ <span class="sheet-total">100</span></span></div>
+          </div>
+          <div class="sheet-title">
+            <h1 id="keyTitle">Answer key</h1>
+            <span class="sheet-kind" id="keyKind">Answer key · Page 2</span>
+          </div>
+          <div class="sheet-grid" id="cardContainerKey"></div>
+        </article>
+      </div>
+
+      <p class="phone-only preview-more no-print" id="previewMore"></p>
+    </main>
+
+    <div class="wc-sticky-bar no-print">
+      <button type="button" class="btn btn-secondary js-new-set">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-7.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/></svg>
+        New set
+      </button>
+      <button type="button" class="btn btn-primary js-print">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+        <span class="print-label">Print 2 pages</span>
+      </button>
+    </div>
   </div>
 
-  <h1 id="mainTitle">Math Window Cards</h1>
-
-  <div class="controls">
-    <!-- Row 1: Inputs -->
-    <div class="control-row">
-      <label>
-        Grid: Rows × Columns
-        <div style="display: flex; gap: 0.5rem;">
-          <input type="number" id="numRows" value="10" min="1" max="20" style="width: 5rem;" />
-          ×
-          <input type="number" id="numCols" value="10" min="1" max="20" style="width: 5rem;" />
+  <!-- ============ Student practice ============ -->
+  <section class="practice no-print" id="practice" aria-label="Practice" hidden>
+    <div id="practice-run">
+      <!-- 600px and wider: every problem as a card -->
+      <div class="practice-wide">
+        <div class="practice-header">
+          <div class="practice-heading">
+            <p class="kicker">Practice</p>
+            <h1 id="practiceTitle"></h1>
+            <p>Type each answer, then press <kbd>Enter</kbd> to check it.</p>
+          </div>
+          <div class="practice-actions">
+            <a class="btn btn-secondary" href="#worksheet">Back to worksheet</a>
+            <button type="button" class="btn btn-primary btn-finish" id="btn-finish">
+              Finish and see score
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+          </div>
         </div>
-      </label>
-
-      <label>
-        Font Size (pt)
-        <input type="number" id="fontSize" value="10" min="8" max="36" />
-      </label>
-
-      <label>
-        Digits (1–6)
-        <input type="number" id="numDigits" value="4" min="1" max="6" />
-      </label>
-
-      <label>
-        Operator
-        <select id="operator">
-          <option value="+">Addition (+)</option>
-          <option value="-">Subtraction (−)</option>
-          <option value="×">Multiplication (×)</option>
-          <option value="÷">Division (÷)</option>
-        </select>
-      </label>
-
-      <label id="carryLabel">
-        <input type="checkbox" id="avoidCarrying" />
-        Avoid Carrying
-      </label>
-
-      <label id="borrowLabel">
-        <input type="checkbox" id="avoidBorrowing" />
-        Avoid Borrowing
-      </label>
-    </div>
-
-    <!-- Rule Builder Custom Constraints -->
-    <div class="control-row" style="margin-top: 0.5rem; width: 100%;">
-      <div class="rule-builder-container"
-        style="background: #f5f5f5; padding: 1rem; border-radius: 4px; border: 1px solid #ddd; width: 100%;">
-        <h4 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 0.95rem; color: #444;">Custom Constraints</h4>
-
-        <div id="rule-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+        <div class="practice-progress">
+          <p id="practiceProgress" aria-live="polite"></p>
+          <div class="segs" id="practiceSegs" aria-hidden="true"></div>
         </div>
+        <div class="practice-grid" id="cardContainer-practice"></div>
+      </div>
 
-        <button id="btn-add-rule"
-          style="margin-top: 0.75rem; background: #e0e0e0; border: 1px solid #ccc; font-size: 0.85rem; padding: 0.25rem 0.5rem;">+
-          Add Rule</button>
+      <!-- Phones: one problem at a time -->
+      <div class="practice-single">
+        <div class="single-bar">
+          <a class="btn" href="#worksheet">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            Stop
+          </a>
+          <p class="single-count" id="singleCount"></p>
+          <p id="singleCorrect"></p>
+        </div>
+        <div class="segs segs-thin" id="singleSegs" aria-hidden="true"></div>
+        <div class="single-body">
+          <div class="wc" id="singleProblem"></div>
+          <label class="vh" for="singleAnswer" id="singleLabel"></label>
+          <input id="singleAnswer" class="answer-input" type="text" inputmode="numeric" autocomplete="off">
+          <div id="singleStatus" class="single-status" role="status" hidden></div>
+          <div class="single-actions">
+            <button type="button" class="btn btn-secondary" id="btn-skip">Skip</button>
+            <button type="button" class="btn btn-primary" id="btn-check">Check</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Row 2: Buttons -->
-    <div class="control-row">
-      <button onclick="generate()">Generate</button>
-      <button onclick="toggleAnswers()">Toggle Answers</button>
-      <button onclick="togglePracticeMode()">Practice Mode</button>
-      <button onclick="generate()">New Problems</button>
-      <button onclick="window.print()">Print</button>
+    <div class="summary" id="practice-summary" hidden>
+      <div class="summary-score">
+        <p class="kicker" id="summaryKicker"></p>
+        <p class="big-score" id="summaryScore" tabindex="-1"></p>
+        <h1 id="summaryHeadline"></h1>
+        <p class="summary-note" id="summaryNote"></p>
+        <div class="summary-actions">
+          <button type="button" class="btn btn-primary" id="btn-practise-missed">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            <span id="practiseMissedLabel"></span>
+          </button>
+          <div class="summary-actions-row">
+            <button type="button" class="btn btn-secondary" id="btn-summary-new">New set</button>
+            <a class="btn btn-ghost" href="#worksheet">Back to worksheet</a>
+          </div>
+        </div>
+      </div>
+      <div class="summary-detail">
+        <div class="stats">
+          <div><span>Correct</span><strong id="statCorrect"></strong></div>
+          <div><span>Not yet</span><strong id="statNotYet"></strong></div>
+          <div><span>Right first try</span><strong id="statFirstTry"></strong></div>
+        </div>
+        <h2 id="missedHeading">To look at again</h2>
+        <div class="missed-cards" id="missedCards"></div>
+        <ul class="missed-list" id="missedList" aria-labelledby="missedHeading"></ul>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <p class="print-note">Tip: Answers start hidden, so Print gives a blank worksheet. Click "Toggle Answers" and print
-    again for the answer key.</p>
-
-  <div class="cards" id="cardContainer"></div>
+  <template id="rule-row-template">
+    <li class="rule-row">
+      <span class="lead"></span>
+      <div class="sentence">
+        <label class="vh" data-for="f" data-text="number to check"></label>
+        <select class="input rule-field" data-part="f">
+          <option value="a">First number (A)</option>
+          <option value="b">Second number (B)</option>
+          <option value="result">Answer</option>
+        </select>
+        <label class="vh" data-for="c" data-text="comparison"></label>
+        <select class="input rule-operator" data-part="c">
+          <option value="LESS_THAN">is less than</option>
+          <option value="GREATER_THAN">is greater than</option>
+          <option value="EQUALS">equals</option>
+          <option value="NOT_EQUALS">does not equal</option>
+        </select>
+        <label class="vh" data-for="t" data-text="compare with"></label>
+        <select class="input rule-value-type" data-part="t">
+          <option value="literal">the number…</option>
+          <option value="a">First number (A)</option>
+          <option value="b">Second number (B)</option>
+          <option value="result">Answer</option>
+        </select>
+        <label class="vh" data-for="v" data-text="number"></label>
+        <input class="input rule-value" data-part="v" type="text" inputmode="numeric" autocomplete="off">
+      </div>
+      <button type="button" class="btn btn-icon btn-remove-rule" aria-label="Remove rule">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+      </button>
+    </li>
+  </template>
 
   <script type="module" src="./src/main.js"></script>
-
-  <!-- Rule Builder Template -->
-  <template id="rule-row-template">
-    <div class="rule-row"
-      style="display: flex; gap: 0.5rem; align-items: center; background: white; padding: 0.5rem; border-radius: 4px; border: 1px solid #ddd;">
-      <select class="rule-field" aria-label="Field" style="padding: 0.25rem;">
-        <option value="a">Operand A</option>
-        <option value="b">Operand B</option>
-        <option value="result">Result</option>
-      </select>
-
-      <select class="rule-operator" aria-label="Comparison" style="padding: 0.25rem;">
-        <option value="EQUALS">Equals (=)</option>
-        <option value="NOT_EQUALS">Not Equals (≠)</option>
-        <option value="GREATER_THAN">Greater Than (&gt;)</option>
-        <option value="LESS_THAN">Less Than (&lt;)</option>
-      </select>
-
-      <select class="rule-value-type" aria-label="Compare with" style="padding: 0.25rem;">
-        <option value="literal">Number</option>
-        <option value="reference">Field</option>
-      </select>
-
-      <input type="number" class="rule-value" aria-label="Number" placeholder="e.g. 50" style="padding: 0.25rem; width: 6rem;">
-
-      <select class="rule-value-field" aria-label="Field to compare with" style="padding: 0.25rem;" hidden>
-        <option value="a">Operand A</option>
-        <option value="b" selected>Operand B</option>
-        <option value="result">Result</option>
-      </select>
-
-      <button class="btn-remove-rule" aria-label="Remove rule"
-        style="color: #d32f2f; background: none; border: none; cursor: pointer; font-weight: bold; padding: 0.25rem 0.5rem; margin-left: auto;">✕</button>
-    </div>
-  </template>
 
   <!-- Add GoatCounter tracking -->
   <script data-goatcounter="https://ithinkandicode.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>

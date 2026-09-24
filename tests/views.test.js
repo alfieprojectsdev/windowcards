@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { rowsToAST } from '../src/view/RuleBuilder.js';
-import { GridRenderer } from '../src/view/GridRenderer.js';
+import { cellHTML, sheetTitle } from '../src/view/GridRenderer.js';
 
 test('rule rows become an AND tree of comparator nodes', () => {
     const ast = rowsToAST([
-        { field: 'a', operator: 'GREATER_THAN', valueType: 'reference', value: 'b' },
+        { field: 'a', operator: 'GREATER_THAN', valueType: 'b', value: '' },
         { field: 'result', operator: 'LESS_THAN', valueType: 'literal', value: '100' }
     ]);
     assert.deepEqual(ast, {
@@ -19,9 +19,9 @@ test('incomplete or invalid rule rows are skipped', () => {
     assert.equal(rowsToAST([
         { field: 'a', operator: 'EQUALS', valueType: 'literal', value: '' },
         { field: 'a', operator: 'EQUALS', valueType: 'literal', value: 'abc' },
-        // The old placeholder suggested typing 'b' with quotes, which matched no field
-        { field: 'a', operator: 'EQUALS', valueType: 'reference', value: "'b'" },
+        { field: 'a', operator: 'EQUALS', valueType: "'b'", value: '' },
         { field: 'x', operator: 'EQUALS', valueType: 'literal', value: '1' },
+        { field: 'a', operator: 'BETWEEN', valueType: 'literal', value: '1' },
         null
     ]), null);
 });
@@ -33,21 +33,17 @@ test('zero is a valid rule value', () => {
     );
 });
 
-test('card text has no blank first line', () => {
-    const text = GridRenderer.cardText({ num1: 12, num2: 7 }, '+');
-    assert.equal(text.split('\n').length, 3);
-    assert.notEqual(text[0], '\n');
-    assert.ok(!text.endsWith('\n'));
+test('worksheet cells keep an empty answer row; answer-key cells fill it', () => {
+    const problem = { num1: 1234, num2: 5678, result: 6912 };
+    const worksheet = cellHTML(problem, 7, '+', false);
+    const key = cellHTML(problem, 7, '+', true);
+
+    assert.match(worksheet, /<span class="cell-n">7<\/span>/);
+    assert.match(worksheet, /1,234/);
+    assert.match(worksheet, /<span class="wc-answer"><\/span>/);
+    assert.match(key, /<span class="wc-answer">6,912<\/span>/);
 });
 
-test('column width fits the longest line on any card, including the answer', () => {
-    const problems = [
-        { num1: 9999, num2: 9999, result: 99980001 },
-        { num1: 1, num2: 1, result: 1 }
-    ];
-    const answerLength = GridRenderer.formatNumber(99980001).length;
-    assert.ok(GridRenderer.cardWidthCh(problems, '×') > answerLength);
-
-    const widest = Math.max(...GridRenderer.cardText(problems[0], '×').split('\n').map(l => l.length));
-    assert.ok(GridRenderer.cardWidthCh(problems, '×') > widest);
+test('sheet titles name the digits and operation', () => {
+    assert.equal(sheetTitle({ numDigits: 4, operator: '÷' }), '4-Digit Division Window Cards');
 });

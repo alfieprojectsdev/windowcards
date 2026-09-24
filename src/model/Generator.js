@@ -1,11 +1,12 @@
 import { RuleEngine } from './RuleEngine.js';
 import { LIMITS } from './State.js';
 
+// word: label on the operation tile; spoken: used in screen-reader labels ("47 plus 38")
 export const OPERATOR_MAP = {
-    '+': { symbol: '+', title: 'Addition', op: (a, b) => a + b },
-    '-': { symbol: '−', title: 'Subtraction', op: (a, b) => a - b },
-    '×': { symbol: '×', title: 'Multiplication', op: (a, b) => a * b },
-    '÷': { symbol: '÷', title: 'Division', op: (a, b) => a / b },
+    '+': { symbol: '+', title: 'Addition', word: 'Add', spoken: 'plus', op: (a, b) => a + b },
+    '-': { symbol: '−', title: 'Subtraction', word: 'Subtract', spoken: 'minus', op: (a, b) => a - b },
+    '×': { symbol: '×', title: 'Multiplication', word: 'Multiply', spoken: 'times', op: (a, b) => a * b },
+    '÷': { symbol: '÷', title: 'Division', word: 'Divide', spoken: 'divided by', op: (a, b) => a / b },
 };
 
 const MAX_ATTEMPTS = 1000;
@@ -115,6 +116,24 @@ export function generateValidProblem(digits, activeRulesAST, operator) {
 
     // Caught by the UI instead of looping forever or returning an invalid problem
     throw new Error(`Constraints are too strict; cannot generate valid problem after ${MAX_ATTEMPTS} attempts.`);
+}
+
+/**
+ * Smallest and largest answer seen in a sample of problems with no custom rules.
+ * Used to tell the teacher what range a "too strict" rule has to fit in.
+ */
+export function answerRange(digits, operator, samples = 400) {
+    const { op } = OPERATOR_MAP[operator];
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < samples; i++) {
+        const operands = generateOperands(digits, operator);
+        if (!operands) continue;
+        const result = op(operands.a, operands.b);
+        min = Math.min(min, result);
+        max = Math.max(max, result);
+    }
+    return [min, max];
 }
 
 export function generateProblemSet(count, settings) {
