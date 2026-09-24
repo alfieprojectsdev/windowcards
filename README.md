@@ -119,4 +119,6 @@ This is a learning project built while studying freeCodeCamp's [Certified Full S
 
 ## License
 
-MIT
+MIT (see `LICENSE`).
+
+The Archivo font in `fonts/` is licensed under the SIL Open Font License 1.1 (see `fonts/OFL.txt`).
