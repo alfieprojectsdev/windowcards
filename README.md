@@ -18,6 +18,44 @@ A web-based worksheet generator for elementary math practice (addition, subtract
 
 ---
 
+## Screenshots
+
+### Making a worksheet
+
+Settings are on the left and the real A4 page is on the right, the real A4 page on the right. Every change redraws the page.
+
+![Worksheet builder: 3-digit addition with No carrying and a custom rule, beside the A4 preview](docs/screenshots/builder-desktop.png)
+
+The answer key has the same problems with their answers, and prints as page 2.
+
+![Answer key preview for 3-digit subtraction with No borrowing](docs/screenshots/answer-key-desktop.png)
+
+### Custom rules
+
+When no problem can pass the rules, the app says why, gives the real answer range, and keeps the last worksheet that worked.
+
+![Too-strict rule message: 2-digit addition answers run from about 29 to 195](docs/screenshots/rules-too-strict.png)
+
+### Practice
+
+Students type each answer and press Enter to check it. Then they see a score and the problems to look at again.
+
+![Practice grid with correct and not-yet answers](docs/screenshots/practice-desktop.png)
+
+![Score screen: 17 out of 20, with the three missed problems](docs/screenshots/summary-desktop.png)
+
+### On a phone
+
+The preview shows the first 12 problems above a sticky New set / Print bar. Practice shows one problem at a time, with a hint when an answer is wrong.
+
+<p>
+  <img src="docs/screenshots/builder-phone.png" width="300" alt="Phone: worksheet preview with New set and Print buttons">
+  &nbsp;
+  <img src="docs/screenshots/practice-phone.png" width="300" alt="Phone practice: 37 + 37 answered 64, with the hint to check the ones column">
+</p>
+
+---
+
 ## Quick Start
 
 ### For Worksheets (Print)

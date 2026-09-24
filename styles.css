@@ -73,6 +73,7 @@ a { color: var(--wc-accent-text); text-underline-offset: 3px; }
 a:hover { color: var(--wc-accent-deep); }
 :focus { outline: none; }
 :focus-visible { outline: 2px solid var(--wc-accent); outline-offset: 2px; }
+[tabindex="-1"]:focus-visible { outline: none; } /* moved there by script (e.g. the score), not a control */
 ::selection { background: color-mix(in srgb, var(--wc-accent) 30%, transparent); }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 [hidden] { display: none !important; }
