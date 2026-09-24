@@ -1,4 +1,5 @@
 import { RuleEngine } from './RuleEngine.js';
+import { LIMITS } from './State.js';
 
 export const OPERATOR_MAP = {
     '+': { symbol: '+', title: 'Addition', op: (a, b) => a + b },
@@ -7,10 +8,43 @@ export const OPERATOR_MAP = {
     '÷': { symbol: '÷', title: 'Division', op: (a, b) => a / b },
 };
 
-function generateNumber(digits) {
-    const max = Math.pow(10, digits) - 1;
-    const min = digits > 1 ? Math.pow(10, digits - 1) : 0;
+const MAX_ATTEMPTS = 1000;
+
+function randomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function digitRange(digits) {
+    return [digits > 1 ? 10 ** (digits - 1) : 0, 10 ** digits - 1];
+}
+
+function generateNumber(digits) {
+    return randomInt(...digitRange(digits));
+}
+
+/**
+ * Division is built backwards from divisor × quotient so it never has a remainder.
+ * The dividend has exactly `digits` digits (it is the number the title refers to),
+ * the divisor has at most ceil(digits / 2) digits, and divisor and quotient are both >= 2.
+ * Returns null when the chosen divisor leaves no valid quotient; the caller retries.
+ */
+function generateDivision(digits) {
+    const [minA, maxA] = digitRange(digits);
+    const b = randomInt(2, 10 ** Math.ceil(digits / 2) - 1);
+    const minQuotient = Math.max(2, Math.ceil(minA / b));
+    const maxQuotient = Math.floor(maxA / b);
+    if (minQuotient > maxQuotient) return null;
+    return { a: randomInt(minQuotient, maxQuotient) * b, b };
+}
+
+function generateOperands(digits, operator) {
+    if (operator === '÷') return generateDivision(digits);
+
+    const a = generateNumber(digits);
+    const b = generateNumber(digits);
+    // Subtraction: put the larger number on top so results are never negative
+    if (operator === '-') return { a: Math.max(a, b), b: Math.min(a, b) };
+    return { a, b };
 }
 
 export function buildASTFromSettings(settings) {
@@ -27,7 +61,7 @@ export function buildASTFromSettings(settings) {
         rules.push({ type: "GREATER_THAN_OR_EQUAL", field: "a", fieldRef: "b" });
         if (avoidBorrowing) rules.push({ type: "NO_BORROW" });
     } else if (operator === '÷') {
-        // No remainders, divisor > 1, dividend != divisor, quotient <= max digits
+        // No remainders, divisor > 1, dividend != divisor
         rules.push({ type: "NO_REMAINDER" });
         rules.push({ type: "GREATER_THAN", field: "b", value: 1 });
         rules.push({ type: "NOT_EQUALS", field: "a", fieldRef: "b" });
@@ -53,68 +87,34 @@ export function buildASTFromSettings(settings) {
 }
 
 export function generateValidProblem(digits, activeRulesAST, operator) {
-    let candidateContext;
-    let isValid = false;
-    let attempts = 0;
-    const MAX_ATTEMPTS = 1000;
+    const [minDigits, maxDigits] = LIMITS.numDigits;
+    if (!Number.isInteger(digits) || digits < minDigits || digits > maxDigits) {
+        throw new RangeError(`Digits must be a whole number from ${minDigits} to ${maxDigits}; got ${digits}.`);
+    }
     const opInfo = OPERATOR_MAP[operator];
+    if (!opInfo) throw new RangeError(`Unknown operator: ${operator}`);
 
-    do {
-        let a = generateNumber(digits);
-        let b = generateNumber(digits);
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        const operands = generateOperands(digits, operator);
+        if (!operands) continue;
 
-        if (operator === '-') {
-            // Fix Subtraction Negatives Trap
-            const tempA = Math.max(a, b);
-            const tempB = Math.min(a, b);
-            a = tempA;
-            b = tempB;
-        } else if (operator === '÷') {
-            // Fix Division Probability Trap and Divide by Zero Trap
-            // Re-generate `b` to strictly avoid `0`
-            while (b === 0) b = generateNumber(digits);
-
-            // Generate a valid `result` within reasonable bounds to build `a` backwards
-            const maxResultDigits = digits; // Keep quotient within max digits
-            let result = generateNumber(maxResultDigits);
-            while (result === 0) result = generateNumber(maxResultDigits);
-
-            // Construct `a` backwards so it's guaranteed to divide cleanly by `b` without remainder
-            a = result * b;
-        }
-
-        candidateContext = {
+        const { a, b } = operands;
+        // The result is computed before validation so custom rules can test it
+        const context = {
             a, b,
             op: operator,
-            result: null, // Will calculate this if valid
-            digits_a: digits,
-            digits_b: digits
+            result: opInfo.op(a, b),
+            digits_a: String(a).length,
+            digits_b: String(b).length
         };
 
-        isValid = RuleEngine.evaluate(activeRulesAST, candidateContext);
-
-        attempts++;
-        if (attempts > MAX_ATTEMPTS) {
-            // Throws error to be caught by UI instead of silently looping or returning invalid problem
-            throw new Error(`Constraints are too strict; cannot generate valid problem after ${MAX_ATTEMPTS} attempts.`);
+        if (RuleEngine.evaluate(activeRulesAST, context)) {
+            return { num1: a, num2: b, result: context.result };
         }
+    }
 
-    } while (!isValid);
-
-    candidateContext.result = opInfo.op(candidateContext.a, candidateContext.b);
-
-    // Check if a constraint was actively applied and obeyed.
-    // For UI purposes, we might want to flag if constraints were used.
-    // Since AST validation handles everything, we'll map `obeyedConstraint` to true if constraints existed.
-    // But honestly we just need to return the problem format.
-    const hasSpecialConstraints = activeRulesAST && (activeRulesAST.type === "AND" && (JSON.stringify(activeRulesAST).includes("NO_CARRY") || JSON.stringify(activeRulesAST).includes("NO_BORROW")));
-
-    return {
-        num1: candidateContext.a,
-        num2: candidateContext.b,
-        result: candidateContext.result,
-        obeyedConstraint: hasSpecialConstraints ? isValid : null
-    };
+    // Caught by the UI instead of looping forever or returning an invalid problem
+    throw new Error(`Constraints are too strict; cannot generate valid problem after ${MAX_ATTEMPTS} attempts.`);
 }
 
 export function generateProblemSet(count, settings) {

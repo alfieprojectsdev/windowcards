@@ -1,6 +1,6 @@
 # ADR 003: Vanilla JS AST Rule Builder UI
 
-**Status:** Proposed  
+**Status:** Accepted, implemented in `da3c86e` (`src/view/RuleBuilder.js`). The "Field" value became a dropdown instead of free text; see CHANGELOG.  
 **Context:** `windowcards` (v4.2 Feature)  
 **Date:** March 2026  
 

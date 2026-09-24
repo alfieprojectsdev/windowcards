@@ -35,7 +35,7 @@ We will **explicitly avoid**:
 ## Consequences
 
 ### Positive
--   **Zero Dependency**: The project runs directly in any modern browser by opening `index.html`.
+-   **Zero Dependency**: The project runs in any modern browser with no install step. (Amended 2026-09-24: since the ES-module refactor in `6d9866b`, `index.html` must be served over HTTP, e.g. `npx serve .`; opening it from disk no longer works. A `package.json` exists only to mark `src/` as ES modules for `node --test`; it has no dependencies.)
 -   **Easy Deployment**: Can be drag-and-dropped onto any static host or run locally without `npm install`.
 -   **Low Barrier to Entry**: Other teachers or novice developers can edit the code with a simple text editor.
 -   **Performance**: Extremely lightweight initial load; no large bundles.

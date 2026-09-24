@@ -1,33 +1,36 @@
+import { DEFAULT_SETTINGS, normalizeSettings } from '../model/State.js';
+
+const RULES_KEY = 'customRules';
+
 export const Storage = {
-    IDS: ["numRows", "numCols", "numDigits", "fontSize", "operator", "avoidCarrying", "avoidBorrowing"],
+    // One localStorage key per setting, kept from v1 so existing users keep their preferences
+    IDS: Object.keys(DEFAULT_SETTINGS),
 
     saveSettings(settings) {
-        this.IDS.forEach(id => {
-            // In MVC, settings are passed in, but we can also read from DOM if needed.
-            // However, to keep it clean, we'll expect the settings object to match these keys.
-            // Or, if persisting from DOM elements is preferred (as in original script), we can do that.
-            // adhereing to the request to pass settings object.
-            if (settings.hasOwnProperty(id)) {
-                localStorage.setItem(id, settings[id]);
-            }
-        });
+        const valid = normalizeSettings(settings);
+        this.IDS.forEach(id => localStorage.setItem(id, valid[id]));
     },
 
     loadSettings() {
-        const loadedSettings = {};
+        const saved = {};
         this.IDS.forEach(id => {
             const val = localStorage.getItem(id);
-            if (val !== null) {
-                // Simple type inference based on original IDs
-                if (id === 'avoidCarrying' || id === 'avoidBorrowing') {
-                    loadedSettings[id] = (val === 'true');
-                } else if (id === 'operator') {
-                    loadedSettings[id] = val;
-                } else {
-                    loadedSettings[id] = parseInt(val);
-                }
-            }
+            if (val !== null) saved[id] = val;
         });
-        return loadedSettings;
+        return normalizeSettings(saved);
+    },
+
+    /** Rule rows as produced by RuleBuilder.readRows(): [{ field, operator, valueType, value }] */
+    saveRules(rows) {
+        localStorage.setItem(RULES_KEY, JSON.stringify(rows));
+    },
+
+    loadRules() {
+        try {
+            const rows = JSON.parse(localStorage.getItem(RULES_KEY));
+            return Array.isArray(rows) ? rows : [];
+        } catch {
+            return [];
+        }
     }
 };

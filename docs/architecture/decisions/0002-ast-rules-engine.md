@@ -1,6 +1,6 @@
 # ADR 002: Implement AST Rules Engine for Math Problem Constraints
 
-**Status:** Proposed / Planned  
+**Status:** Accepted, implemented in 4.1.0 (`src/model/RuleEngine.js`)  
 **Context:** `windowcards` (Vanilla JS Math Grid Generator)  
 **Date:** March 2026  
 
