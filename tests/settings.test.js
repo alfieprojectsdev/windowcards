@@ -19,10 +19,27 @@ beforeEach(() => {
 
 test('numeric settings are clamped to their limits', () => {
     const s = normalizeSettings({ numRows: 500, numCols: 0, numDigits: 9, fontSize: 2 });
-    assert.equal(s.numRows, 20);
+    assert.equal(s.numRows, 10);
     assert.equal(s.numCols, 1);
     assert.equal(s.numDigits, 6);
     assert.equal(s.fontSize, 8);
+});
+
+test('"Print the answer key" defaults to on and keeps an explicit off', () => {
+    assert.equal(normalizeSettings({}).includeKey, true);
+    assert.equal(normalizeSettings({ includeKey: false }).includeKey, false);
+    assert.equal(normalizeSettings({ includeKey: 'false' }).includeKey, false);
+});
+
+test('rules saved before the redesign load in the new format', () => {
+    localStorage.setItem('customRules', JSON.stringify([
+        { field: 'a', operator: 'GREATER_THAN', valueType: 'reference', value: 'b' },
+        { field: 'result', operator: 'LESS_THAN', valueType: 'literal', value: '50' }
+    ]));
+    assert.deepEqual(Storage.loadRules(), [
+        { field: 'a', operator: 'GREATER_THAN', valueType: 'b', value: '' },
+        { field: 'result', operator: 'LESS_THAN', valueType: 'literal', value: '50' }
+    ]);
 });
 
 test('empty or unparseable values fall back to the defaults', () => {

@@ -47,3 +47,4 @@ We will **explicitly avoid**:
 
 ## Compliance
 -   GoatCounter is used for privacy-friendly analytics, included as a simple script tag.
+-   (Added 2026-09-24) The redesign's Archivo font is a self-hosted file in `fonts/` (35 KB), not a Google Fonts link, so the page works on the limited connections this ADR assumes. Icons are inline SVG, not an icon font.

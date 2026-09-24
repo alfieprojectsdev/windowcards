@@ -8,6 +8,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Redesign (from the Claude Design handoff "Math Window Cards Redesign")
+
+#### Added
+- **Teacher builder**: five numbered settings groups (Operation, Digits per number, Grid size, Printing, Custom rules) beside a live A4 preview. There's no Generate step; every change redraws the page. On phones the settings stack above a 12-card preview with a sticky New set / Print bar.
+- **Answer key as page 2**: a separate A4 page with a forced page break, on by default ("Print the answer key as page 2"). The preview switches between Worksheet and Answer key.
+- Name, Grade & Section, Date and Score lines on every sheet, and a small problem number in each cell to match the key.
+- **Fit check**: when a grid won't fit on one A4 page at the chosen number size, the Printing group says so and suggests a size or column count.
+- **Too-strict rules** show an inline message with the real answer range (for example "answers run from about 0 to 85") and a "Remove last rule" button, instead of `alert()`. The preview keeps the last set that worked.
+- **Practice**: uses the first 20 problems of the worksheet. Answers are checked on Enter or when leaving the box, never mid-typing. Feedback is an icon plus "Correct" / "Not yet". A score screen shows correct, not yet and right-first-try counts, the missed problems, and "Practise the N I missed".
+- **Phone practice**: one problem at a time with a 64px answer box and the number keypad (`inputmode="numeric"`), Skip / Check / Next, and a column hint for wrong addition and subtraction answers, e.g. "Check the ones column — 7 + 8 is more than 10."
+- Archivo font, self-hosted in `fonts/` (Latin subset, weights 400–800, 35 KB) with a system-font fallback.
+
+#### Changed
+- Grid rows and columns are limited to 1–10, the most that fits on one A4 page (was 1–20).
+- Custom rules read as sentences: "Answer · is less than · the number… · 100". "Compare with" lists the number box and the three fields in one dropdown; rules saved in the old format are converted on load.
+- "Generate" and "New Problems" are merged into **New set**. "Toggle Answers" is replaced by the Worksheet / Answer key preview switch.
+- `worksheet-generated` analytics now fire only when New set is clicked, not on every setting change. New event: `practice-started`.
+- Numbers always use `1,234` separators, whatever the device's locale.
+
+---
+
 ### Added
 - **Custom Constraints panel** (`da3c86e`): teachers add rows such as "Result less than 100" or "Operand A greater than Operand B". Rules are saved in `localStorage` and the grid regenerates when a rule changes.
 - Unit tests in `tests/`, run with `npm test` (Node's built-in runner, no dependencies).
@@ -33,9 +54,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `notes.md` (early requirements notes, now covered by this changelog) and `docs/WEB_CLAUDE_INSTRUCTIONS.md` (an agent handoff note describing features this app doesn't have).
 
 ### Planned
-- Separate answer key page option
-- Mobile-optimized touch input
-- Progress tracking (problems solved, accuracy %)
+- Progress tracking across sessions (problems solved, accuracy %)
 
 ---
 
